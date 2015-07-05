@@ -1,0 +1,35 @@
+Name: toolbox
+Version: 1.0
+Cabal-Version: >= 1.18
+Maintainer: Arnaud Bailly <arnaud@capital-match.com>
+Author: Arnaud Bailly
+Build-Type: Simple
+Category: Utility
+Description:
+            Toolbox for managing CM environments and infrastructure
+
+Executable toolbox
+  Main-Is: toolbox.hs
+  GHC-Options: -Wall -threaded
+  Hs-Source-Dirs:  src
+  Build-Depends: aeson
+               , base < 5
+               , base >= 4.5
+               , bytestring
+               , comonad >= 4.2.2
+               , data-default
+               , free >= 4.9
+               , iproute
+               , lens
+               , pretty >= 1.1
+               , mtl >= 2.2.1
+               , network-uri >= 2.6.0.1
+               , random
+               , text
+               , time
+               , transformers >= 0.4.1.0
+               , unix
+               , unordered-containers
+               , vector
+               , wreq
+
