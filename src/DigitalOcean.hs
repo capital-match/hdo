@@ -37,7 +37,6 @@ data ToolConfiguration = Tool { slackUri  :: Maybe URI
 instance Default ToolConfiguration where
   def = Tool Nothing Nothing False
 
-
 -- | A type for describing @Region@
 -- A region can be assigned an empty object when it is undefined, or be referenced simply
 -- by its @slug@
@@ -345,7 +344,7 @@ data Size = Size { szSlug          :: SizeSlug
                  , szTransfer      :: TransferRate
                  , szPrice_Monthly :: Price
                  , szPrice_Hourly  :: Price
-                 , szRegions       :: [ Slug ]
+                 , szRegions       :: [ Region ]
                  , szAvailable     :: Bool
                  } deriving (Show)
 
@@ -363,6 +362,70 @@ instance FromJSON Size where
                          <*> o .: "available"
 
   parseJSON e          = failParse e
+
+
+-- * Droplets Actions
+
+-- | Type of action status
+-- This is returned when action is initiated or when status of some action is requested
+
+data ActionResult = ActionResult { actionId           :: Id
+                                 , actionStatus       :: ActionStatus
+                                 , actionType         :: ActionType
+                                 , actionStartedAt    :: Maybe Date
+                                 , actionCompletedAt  :: Maybe Date
+                                 , actionResourceId   :: Id
+                                 , actionResourceType :: String
+                                 , actionRegionSlug   :: Region
+                                 } deriving (Show)
+
+instance FromJSON ActionResult where
+  parseJSON (Object o) = ActionResult
+                         <$> o .: "id"
+                         <*> o .: "status"
+                         <*> o .: "type"
+                         <*> o .:? "started_at"
+                         <*> o .:? "completed_at"
+                         <*> o .: "resource_id"
+                         <*> o .: "resource_type"
+                         <*> o .: "region_slug"
+  parseJSON v          = fail $ "cannot parse action " ++ show v
+
+data ActionStatus = InProgress
+                  | Completed
+                  | Errored
+                  deriving (Show)
+
+instance FromJSON ActionStatus where
+  parseJSON (String s) = case s of
+                          "in-progress" -> return InProgress
+                          "completed"   -> return Completed
+                          "errored"     -> return Errored
+                          _             -> fail $ "unknown action status " ++ show s
+  parseJSON v          = fail $ "cannot parse action status " ++ show v
+
+data ActionType = PowerOff
+                | PowerOn
+                deriving (Show)
+
+instance FromJSON ActionType where
+  parseJSON (String s) = case s of
+                          "power_off" -> return PowerOff
+                          "power_on"  -> return PowerOn
+                          _           -> fail $ "unknown action type " ++ show s
+  parseJSON v          = fail $ "cannot parse action type " ++ show v
+
+instance ToJSON ActionType where
+  toJSON PowerOff = String "power_off"
+  toJSON PowerOn  = String "power_on"
+
+data Action = DoPowerOff
+            | DoPowerOn
+            deriving Show
+
+instance ToJSON Action where
+  toJSON DoPowerOff = object [ "type" .= PowerOff ]
+  toJSON DoPowerOn  = object [ "type" .= PowerOn ]
 
 -- |Type of Domain zones
 --

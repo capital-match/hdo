@@ -6,7 +6,7 @@ module Net where
 import           Control.Concurrent       (threadDelay)
 import           Control.Lens             ((^.))
 import           Control.Monad.Trans.Free
-import           Data.Aeson               (Value, decode)
+import           Data.Aeson               (Value, decode, eitherDecode)
 import           Data.ByteString.Lazy     (ByteString)
 import           Network.URI
 import           Network.Wreq
@@ -15,7 +15,7 @@ data Net a = Get URI (Value -> a)
            | Post URI Value (Maybe Value -> a)
            | WaitFor Int String a
            | GetWith Options URI (Value -> a)
-           | PostWith Options URI Value (Maybe Value -> a)
+           | PostWith Options URI Value (Either String Value -> a)
            | DeleteWith Options URI a
            deriving (Functor)
 
@@ -31,7 +31,7 @@ getJSONWith opts uri = liftF $ GetWith opts uri id
 postJSON :: (Monad m) => URI -> Value -> NetT m (Maybe Value)
 postJSON uri json = liftF $ Post uri json id
 
-postJSONWith :: (Monad m) => Options ->  URI -> Value -> NetT m (Maybe Value)
+postJSONWith :: (Monad m) => Options ->  URI -> Value -> NetT m (Either String Value)
 postJSONWith opts uri json = liftF $ PostWith opts uri json id
 
 deleteJSONWith :: (Monad m) => Options -> URI -> NetT m ()
@@ -80,7 +80,7 @@ runWreq r = do
 
       step (Free (PostWith opts uri val k)) = do
         resp <- postWith opts (asString uri) val :: IO (Response ByteString)
-        let value :: Maybe Value = decode $ resp ^. responseBody
+        let value :: Either String Value = eitherDecode $ resp ^. responseBody
         runWreq (k value)
 
 

@@ -90,8 +90,13 @@ parseCommandOptions ("droplets": "create":args) = do
    (_,_,errs) -> liftIO $ ioError (userError (concat errs  ++ usage))
 parseCommandOptions ("droplets": "destroy":dropletId:[]) = destroyDroplet (P.read dropletId)  >>= outputResult
 parseCommandOptions ("droplets": "list":_)               = listDroplets  >>= outputResult
+parseCommandOptions ("droplets": "power_off":dropletId:[])
+                                                         = dropletAction (P.read dropletId) DoPowerOff >>= outputResult
+parseCommandOptions ("droplets": "power_on":dropletId:[])
+                                                         = dropletAction (P.read dropletId) DoPowerOn >>= outputResult
 parseCommandOptions ("images": "list":_)                 = listImages >>= outputResult
 parseCommandOptions ("keys":"list":_)                    = listKeys >>= outputResult
+parseCommandOptions ("sizes":"list":_)                   = listSizes >>= outputResult
 parseCommandOptions e                                    = fail $ "I don't know how to interpret commands " ++ unwords e
 
 main :: IO ()
@@ -106,8 +111,8 @@ class (Show a) => Pretty a where
   pretty = text . show
 
 instance (Pretty a, Pretty b) => Pretty (Either a b) where
-  pretty (Left a) = text "Left:" <+> pretty a
-  pretty (Right a) = text "Right:" <+> pretty a
+  pretty (Left a) = text "Error:" <+> pretty a
+  pretty (Right a) = pretty a
 
 instance (Pretty a) => Pretty (Maybe a) where
   pretty (Just a) = pretty a
@@ -115,6 +120,9 @@ instance (Pretty a) => Pretty (Maybe a) where
 
 instance Pretty Char where
   pretty = char
+
+instance Pretty Date where
+  pretty (Date d) = text $ show d
 
 instance Pretty Droplet where
   pretty Droplet{..} = integer id $$
@@ -154,6 +162,19 @@ instance Pretty Key where
 
 instance Pretty Image where
   pretty Image{..} = integer imageId <+> text imageName <+> text distribution
+
+instance Pretty TransferRate
+instance Pretty SizeSlug
+
+instance Pretty Size where
+  pretty Size{..} = pretty szSlug $$
+                    nest 5 (hcat $ punctuate (char '/') [pretty szMemory, int szVcpus, pretty szDisk, pretty szTransfer]) $$
+                    nest 5 (pretty szPrice_Hourly <> text "$/h, " <> pretty szPrice_Monthly <> text "$/mo" ) $$
+                    nest 5 (hcat $ punctuate (char ',') $ map pretty szRegions)
+
+instance Pretty ActionResult where
+  pretty ActionResult{..} = brackets (integer actionId) <+> pretty actionStartedAt <+> text "->" <+> pretty actionCompletedAt $$
+                            (nest 5 $ integer actionResourceId <+> text (show actionType) <> char ':' <+> text (show actionStatus))
 
 outputResult :: (Pretty a, MonadIO m) => a -> m  ()
 outputResult = liftIO . putStrLn . render . pretty

@@ -44,6 +44,9 @@ imagesURI = "images"
 keysURI :: String
 keysURI = "keys"
 
+sizesURI :: String
+sizesURI = "sizes"
+
 accountURI :: String
 accountURI = "account"
 
@@ -52,6 +55,9 @@ dropletsEndpoint = rootURI </> apiVersion </> dropletsURI
 
 keysEndpoint :: String
 keysEndpoint = rootURI </> apiVersion </> accountURI </> keysURI
+
+sizesEndpoint :: String
+sizesEndpoint = rootURI </> apiVersion </> sizesURI
 
 imagesEndpoint :: String
 imagesEndpoint = rootURI </> apiVersion </> imagesURI
@@ -83,21 +89,27 @@ doListKeys w = maybe (return [], w)
                        in (droplets, w))
                (authToken (ask w))
 
+doListSizes :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> (NetT m [Size], w a)
+doListSizes w = maybe (return [], w)
+               (\ t -> let sizes = toList "sizes" <$> getJSONWith (authorisation t) (toURI sizesEndpoint)
+                       in (sizes, w))
+               (authToken (ask w))
+
 doListImages :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> (NetT m [Image], w a)
 doListImages w = maybe (return [], w)
                  (\ t -> let droplets = toList "images" <$> getJSONWith (authorisation t) (toURI imagesEndpoint)
                          in (droplets, w))
                  (authToken (ask w))
 
-dropletFromResponse :: Value -> Either String Droplet
-dropletFromResponse (Object b) = A.parseEither parseJSON (b H.! "droplet")
-dropletFromResponse v          = Left $ "cannot decode JSON value to a droplet " ++ show v
+dropletFromResponse :: Either String Value -> Either String Droplet
+dropletFromResponse (Right (Object b)) = A.parseEither parseJSON (b H.! "droplet")
+dropletFromResponse v                  = Left $ "cannot decode JSON value to a droplet " ++ show v
 
 doCreate :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> BoxConfiguration -> (NetT m (Either String Droplet), w a)
 doCreate w config = maybe (return $ Left "no authentication token defined", w)
                     (\ t -> let opts = (authorisation t)
                                 droplets = postJSONWith opts (toURI dropletsEndpoint) (toJSON config)
-                                           >>= (\ d -> case dropletFromResponse $ fromJust d of
+                                           >>= (\ d -> case dropletFromResponse d of
                                                         Right b -> waitForBoxToBeUp opts 60 b
                                                         err     -> return err)
                             in (droplets, w))
@@ -109,12 +121,23 @@ doDestroyDroplet w dropletId = maybe (return $ Just "no authentication token def
                                        in (r, w))
                                (authToken (ask w))
 
+actionResult :: Either String Value -> Either String ActionResult
+actionResult (Right (Object r)) = A.parseEither parseJSON (r H.! "action")
+actionResult e                  = Left $ "cannot extract action result from " ++ show e
+
+doAction :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> Id -> Action -> (NetT m (Either String ActionResult), w a)
+doAction w dropletId action = maybe (return $ Left "no authentication token defined", w)
+                              (\ t -> let r = postJSONWith (authorisation t) (toURI $ dropletsEndpoint </> show dropletId </> "actions") (toJSON action)
+                                              >>= return . actionResult
+                                      in (r, w))
+                              (authToken (ask w))
+
 waitForBoxToBeUp :: (Monad m) => Options -> Int -> Droplet -> NetT m (Either String Droplet)
 waitForBoxToBeUp _    0 box  = return (Right box)
 waitForBoxToBeUp opts n box  = do
   waitFor 1000000 ("waiting for droplet " ++ name box ++ " to become Active: " ++ show (n) ++ "s")
   b <- getJSONWith opts (toURI $ dropletsEndpoint </> show (DO.id box))
-  case dropletFromResponse b of
+  case dropletFromResponse (Right b) of
    Right box'-> if status box' == Active
                 then return (Right box')
                 else waitForBoxToBeUp opts (n-1) box'
@@ -127,6 +150,8 @@ mkDOClient config = coiterT next start
            <$> doList
            <*> doCreate
            <*> doDestroyDroplet
+           <*> doAction
            <*> doListKeys
+           <*> doListSizes
            <*> doListImages
     start = env config (return ())
