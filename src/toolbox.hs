@@ -94,6 +94,8 @@ parseCommandOptions ("droplets": "power_off":dropletId:[])
                                                          = dropletAction (P.read dropletId) DoPowerOff >>= outputResult
 parseCommandOptions ("droplets": "power_on":dropletId:[])
                                                          = dropletAction (P.read dropletId) DoPowerOn >>= outputResult
+parseCommandOptions ("droplets": "action":dropletId:actionId:[])
+                                                         = getAction (P.read dropletId)  (P.read actionId) >>= outputResult
 parseCommandOptions ("images": "list":_)                 = listImages >>= outputResult
 parseCommandOptions ("keys":"list":_)                    = listKeys >>= outputResult
 parseCommandOptions ("sizes":"list":_)                   = listSizes >>= outputResult

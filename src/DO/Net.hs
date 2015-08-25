@@ -132,6 +132,13 @@ doAction w dropletId action = maybe (return $ Left "no authentication token defi
                                       in (r, w))
                               (authToken (ask w))
 
+doGetAction :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> Id -> Id -> (NetT m (Either String ActionResult), w a)
+doGetAction w dropletId actionId = maybe (return $ Left "no authentication token defined", w)
+                                   (\ t -> let r = getJSONWith (authorisation t) (toURI $ dropletsEndpoint </> show dropletId </> "actions" </> show actionId)
+                                                   >>= return . actionResult . Right
+                                           in (r, w))
+                                   (authToken (ask w))
+
 waitForBoxToBeUp :: (Monad m) => Options -> Int -> Droplet -> NetT m (Either String Droplet)
 waitForBoxToBeUp _    0 box  = return (Right box)
 waitForBoxToBeUp opts n box  = do
@@ -151,6 +158,7 @@ mkDOClient config = coiterT next start
            <*> doCreate
            <*> doDestroyDroplet
            <*> doAction
+           <*> doGetAction
            <*> doListKeys
            <*> doListSizes
            <*> doListImages
