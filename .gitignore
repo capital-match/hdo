@@ -49,3 +49,4 @@ ui/.lein-failures
 .hub.pid
 .node.out
 .node.pid
+toolbox
