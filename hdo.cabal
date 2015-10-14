@@ -1,4 +1,4 @@
-Name: toolbox
+Name: hdo
 Version: 1.0
 Cabal-Version: >= 1.18
 Maintainer: Arnaud Bailly <arnaud@capital-match.com>
@@ -6,10 +6,10 @@ Author: Arnaud Bailly
 Build-Type: Simple
 Category: Utility
 Description:
-            Toolbox for managing CM environments and infrastructure
+            Digital Ocean Haskell client
 
-Executable toolbox
-  Main-Is: toolbox.hs
+Executable hdo
+  Main-Is: hdo.hs
   GHC-Options: -Wall -threaded
   Hs-Source-Dirs:  src
   Build-Depends: aeson
