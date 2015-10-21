@@ -4,9 +4,14 @@ Cabal-Version: >= 1.18
 Maintainer: Arnaud Bailly <arnaud.oqube@gmail.com>
 Author: Arnaud Bailly
 Build-Type: Simple
-Category: Utility
+Category: Cloud
+License: MIT
+License-File: LICENSE
 Description:
             Digital Ocean Haskell client
+
+Extra-Source-Files:
+    README.md, stack.yaml, LICENSE
 
 Library
   Default-Language:   Haskell2010
