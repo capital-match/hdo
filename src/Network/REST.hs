@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveFunctor       #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | Functor and low-level mechanism to interact with a server using Wreq and JSON values.
-module Net where
+module Network.REST where
 
 import           Control.Concurrent       (threadDelay)
 import           Control.Lens             ((^.))
@@ -39,9 +39,6 @@ deleteJSONWith opts uri = liftF $ DeleteWith opts uri ()
 
 waitFor :: (Monad m) => Int -> String -> NetT m ()
 waitFor delay message = liftF $ WaitFor delay message ()
-
---notifySlack :: String -> ToolConfiguration -> IO ()
---notifySlack msg Tool{..} = when (not quiet) $ maybe (return ()) (\ u -> notifyToSlack u "#platformdev" msg) slackUri
 
 -- default implementation based on wreq and IO
 runWreq :: NetT IO r -> IO r

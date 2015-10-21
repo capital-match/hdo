@@ -2,7 +2,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE RankNTypes             #-}
-module Pairing (Pairing(..)
+module Network.DO.Pairing (Pairing(..)
                , PairingM(..)
                , pairEffect
                , pairEffectM

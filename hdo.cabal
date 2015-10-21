@@ -8,22 +8,25 @@ Category: Cloud
 License: MIT
 License-File: LICENSE
 Description:
-            Digital Ocean Haskell client
 
+  HDO is a client to <https://www.digitalocean.com/ Digital Ocean> API. It can either
+  be used as a library embedded in other tools or as a command-line client (@docean@).
+
+Synopsis: A Digital Ocean client in Haskell
 Extra-Source-Files:
     README.md, stack.yaml, LICENSE
 
 Library
   Default-Language:   Haskell2010
-  GHC-Options:  -Wall -Werror -fno-warn-orphans -rtsopts -threaded
+  GHC-Options:  -Wall -fno-warn-orphans -rtsopts
   Hs-Source-Dirs:  src
-  exposed-modules: Commands
-                 , DigitalOcean
-                 , Net
-                 , DO.Net
-                 , Names, Pairing
+  exposed-modules: Network.DO.Commands
+                 , Network.DO.Types
+                 , Network.DO.Net
+                 , Network.DO.Names, Network.DO.Pairing
+                 , Network.REST
   Build-Depends: aeson
-               , base
+               , base < 5
                , bytestring
                , comonad
                , data-default
@@ -45,8 +48,9 @@ Library
 Executable docean
   Default-Language:   Haskell2010
   Main-Is: hdo.hs
+  GHC-Options:  -Wall -fno-warn-orphans -rtsopts -threaded
   Hs-Source-Dirs:  main
-  Build-depends: base
+  Build-depends: base < 5
                , hdo
                , comonad
                , iproute

@@ -1,14 +1,13 @@
 {-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-module Commands where
+module Network.DO.Commands where
 
 import           Control.Comonad.Trans.Cofree
 import           Control.Monad.Trans.Free
-import           DigitalOcean
+import           Network.DO.Pairing
+import           Network.DO.Types
 import           Prelude                      as P
-
-import           Pairing
 
 -- functor for DO DSL
 data DO a = ListDroplets ([Droplet] -> a)
@@ -32,13 +31,13 @@ createDroplet :: (Monad m) => BoxConfiguration -> DOT m (Either String Droplet)
 createDroplet conf = liftF $ CreateDroplet conf P.id
 
 destroyDroplet :: (Monad m) => Id -> DOT m (Maybe String)
-destroyDroplet dropletId = liftF $ DestroyDroplet dropletId P.id
+destroyDroplet did = liftF $ DestroyDroplet did P.id
 
 dropletAction :: (Monad m) => Id -> Action -> DOT m (Either String ActionResult)
-dropletAction dropletId action = liftF $ DropletAction dropletId action P.id
+dropletAction did action = liftF $ DropletAction did action P.id
 
 getAction :: (Monad m) => Id -> Id -> DOT m (Either String ActionResult)
-getAction dropletId actId = liftF $ GetAction dropletId actId P.id
+getAction did actId = liftF $ GetAction did actId P.id
 
 listKeys :: (Monad m) => DOT m [Key]
 listKeys = liftF $ ListKeys P.id

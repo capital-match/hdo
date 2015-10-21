@@ -8,7 +8,7 @@
 -- DigitalOcean's API v2
 --
 -- See https://developers.digitalocean.com/documentation/v2/
-module DigitalOcean where
+module Network.DO.Types where
 
 import           Data.Aeson        as A
 import           Data.Aeson.Types  as A
@@ -226,8 +226,8 @@ instance FromJSON (Network V6) where
 data Networks = Networks { v4 :: [ Network V4 ]
                          , v6 :: [ Network V6 ]
                          }
-                | NoNetworks
-                deriving (Generic, Show)
+              | NoNetworks
+              deriving (Generic, Show)
 
 instance FromJSON Networks where
   parseJSON (Object n) = if H.null n
@@ -240,7 +240,7 @@ instance FromJSON Networks where
 -- | (Partial) Type of Droplets
 --
 -- https://developers.digitalocean.com/documentation/v2/#droplets
-data Droplet = Droplet { id           :: Id
+data Droplet = Droplet { dropletId    :: Id
                        , name         :: String
                        , memory       :: Bytes Mega
                        , vcpus        :: Int

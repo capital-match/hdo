@@ -18,12 +18,12 @@ import           System.IO
 import           System.IO.Error        (isDoesNotExistError)
 import           Text.PrettyPrint
 
-import           Commands
-import           DigitalOcean           as DO
-import           DO.Net
-import           Names
-import           Net
-import           Pairing
+import           Network.DO.Commands
+import           Network.DO.Names
+import           Network.DO.Net
+import           Network.DO.Pairing
+import           Network.DO.Types       as DO
+import           Network.REST
 
 generalOptions :: [OptDescr (ToolConfiguration -> ToolConfiguration)]
 generalOptions = [ Option ['t'] ["auth-token"]
@@ -127,7 +127,7 @@ instance Pretty Date where
   pretty (Date d) = text $ show d
 
 instance Pretty Droplet where
-  pretty Droplet{..} = integer id $$
+  pretty Droplet{..} = integer dropletId $$
                        (nest 5 $ (text name) <+> brackets (pretty status) <+> pretty region) $$
                        (nest 5 $ hcat $ punctuate (char '/') [pretty memory, pretty disk, int vcpus <+> text "cores"]) $$
                        (nest 5 $ pretty networks)

@@ -6,7 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 
 -- | Interpreter for accessing DO API through the web using [wreq http://www.serpentine.com/wreq].
-module DO.Net(mkDOClient) where
+module Network.DO.Net(mkDOClient) where
 
 import           Control.Applicative
 import           Control.Comonad.Env.Class    (ComonadEnv, ask)
@@ -25,9 +25,9 @@ import           Network.URI                  (URI, parseURI)
 import           Network.Wreq
 import           Prelude                      as P
 
-import           Commands
-import           DigitalOcean                 as DO hiding (URI)
-import           Net
+import           Network.DO.Commands
+import           Network.DO.Types             as DO hiding (URI)
+import           Network.REST
 
 rootURI :: String
 rootURI = "https://api.digitalocean.com"
@@ -143,7 +143,7 @@ waitForBoxToBeUp :: (Monad m) => Options -> Int -> Droplet -> NetT m (Either Str
 waitForBoxToBeUp _    0 box  = return (Right box)
 waitForBoxToBeUp opts n box  = do
   waitFor 1000000 ("waiting for droplet " ++ name box ++ " to become Active: " ++ show (n) ++ "s")
-  b <- getJSONWith opts (toURI $ dropletsEndpoint </> show (DO.id box))
+  b <- getJSONWith opts (toURI $ dropletsEndpoint </> show (dropletId box))
   case dropletFromResponse (Right b) of
    Right box'-> if status box' == Active
                 then return (Right box')
