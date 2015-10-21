@@ -24,7 +24,7 @@ Library
                  , Network.DO.Types
                  , Network.DO.Net
                  , Network.DO.Names, Network.DO.Pairing
-                 , Network.REST
+                 , Network.REST, Network.DO.Pretty
   Build-Depends: aeson
                , base < 5
                , bytestring

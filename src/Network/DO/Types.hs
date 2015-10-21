@@ -405,26 +405,33 @@ instance FromJSON ActionStatus where
 
 data ActionType = PowerOff
                 | PowerOn
+                | MakeSnapshot
                 deriving (Show)
 
 instance FromJSON ActionType where
   parseJSON (String s) = case s of
                           "power_off" -> return PowerOff
                           "power_on"  -> return PowerOn
+                          "snapshot"  -> return MakeSnapshot
                           _           -> fail $ "unknown action type " ++ show s
   parseJSON v          = fail $ "cannot parse action type " ++ show v
 
 instance ToJSON ActionType where
   toJSON PowerOff = String "power_off"
   toJSON PowerOn  = String "power_on"
+  toJSON MakeSnapshot = String "snapshot"
 
 data Action = DoPowerOff
             | DoPowerOn
+            | CreateSnapshot String
             deriving Show
 
 instance ToJSON Action where
-  toJSON DoPowerOff = object [ "type" .= PowerOff ]
-  toJSON DoPowerOn  = object [ "type" .= PowerOn ]
+  toJSON DoPowerOff                    = object [ "type" .= PowerOff ]
+  toJSON DoPowerOn                     = object [ "type" .= PowerOn ]
+  toJSON (CreateSnapshot snapshotName) = object [ "type" .= MakeSnapshot
+                                                , "name" .= snapshotName
+                                                ]
 
 -- |Type of Domain zones
 --
