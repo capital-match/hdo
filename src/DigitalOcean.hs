@@ -10,16 +10,15 @@
 -- See https://developers.digitalocean.com/documentation/v2/
 module DigitalOcean where
 
-import           Control.Applicative
-import           Data.Aeson          as A
-import           Data.Aeson.Types    as A
+import           Data.Aeson        as A
+import           Data.Aeson.Types  as A
 import           Data.Default
-import qualified Data.HashMap.Lazy   as H
+import qualified Data.HashMap.Lazy as H
 import           Data.IP
-import           Data.List           (elemIndex)
-import           Data.Monoid         ((<>))
-import           Data.Text           (unpack)
-import           Data.Time           (UTCTime)
+import           Data.List         (elemIndex)
+import           Data.Monoid       ((<>))
+import           Data.Text         (unpack)
+import           Data.Time         (UTCTime)
 import           GHC.Generics
 
 

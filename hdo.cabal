@@ -1,35 +1,58 @@
 Name: hdo
-Version: 1.0
+Version: 0.1
 Cabal-Version: >= 1.18
-Maintainer: Arnaud Bailly <arnaud@capital-match.com>
+Maintainer: Arnaud Bailly <arnaud.oqube@gmail.com>
 Author: Arnaud Bailly
 Build-Type: Simple
 Category: Utility
 Description:
             Digital Ocean Haskell client
 
-Executable hdo
-  Main-Is: hdo.hs
-  GHC-Options: -Wall -threaded
+Library
+  Default-Language:   Haskell2010
+  GHC-Options:  -Wall -Werror -fno-warn-orphans -rtsopts -threaded
   Hs-Source-Dirs:  src
+  exposed-modules: Commands
+                 , DigitalOcean
+                 , Net
+                 , DO.Net
+                 , Names, Pairing
   Build-Depends: aeson
-               , base < 5
-               , base >= 4.5
+               , base
                , bytestring
-               , comonad >= 4.2.2
+               , comonad
                , data-default
-               , free >= 4.9
+               , free
                , iproute
                , lens
-               , pretty >= 1.1
-               , mtl >= 2.2.1
-               , network-uri >= 2.6.0.1
+               , pretty
+               , mtl
+               , network-uri
                , random
                , text
                , time
-               , transformers >= 0.4.1.0
+               , transformers
                , unix
                , unordered-containers
                , vector
                , wreq
 
+Executable docean
+  Main-Is: hdo.hs
+  Hs-Source-Dirs:  main
+  Build-depends: base
+               , hdo
+               , comonad
+               , iproute
+               , pretty
+               , unordered-containers
+               , bytestring
+               , vector
+               , network-uri
+               , aeson
+               , time
+               , transformers
+               , free
+               , data-default
+               , random
+               , text

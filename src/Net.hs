@@ -70,7 +70,7 @@ runWreq r = do
         runWreq (k value)
 
       step (Free (DeleteWith opts uri k)) = do
-        _ <- deleteWith opts (asString uri) :: IO (Response ())
+        _ <- deleteWith opts (asString uri) :: IO (Response ByteString)
         runWreq k
 
       step (Free (Post uri val k)) = do
