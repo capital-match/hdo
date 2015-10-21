@@ -43,6 +43,7 @@ Library
                , wreq
 
 Executable docean
+  Default-Language:   Haskell2010
   Main-Is: hdo.hs
   Hs-Source-Dirs:  main
   Build-depends: base
