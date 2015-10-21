@@ -95,7 +95,9 @@ parseCommandOptions ("droplets":"snapshot":dropletId:snapshotName:[])
                                                          = dropletAction (P.read dropletId) (CreateSnapshot snapshotName) >>= outputResult
 parseCommandOptions ("droplets":"action":dropletId:actionId:[])
                                                          = getAction (P.read dropletId)  (P.read actionId) >>= outputResult
-parseCommandOptions ("images":"list":_)                 = listImages >>= outputResult
+parseCommandOptions ("droplets":dropletId:"snapshots":[])
+                                                         = listDropletSnapshots (P.read dropletId) >>= outputResult
+parseCommandOptions ("images":"list":_)                  = listImages >>= outputResult
 parseCommandOptions ("keys":"list":_)                    = listKeys >>= outputResult
 parseCommandOptions ("sizes":"list":_)                   = listSizes >>= outputResult
 parseCommandOptions e                                    = fail $ "I don't know how to interpret commands " ++ unwords e

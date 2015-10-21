@@ -97,9 +97,16 @@ doListSizes w = maybe (return [], w)
 
 doListImages :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> (NetT m [Image], w a)
 doListImages w = maybe (return [], w)
-                 (\ t -> let droplets = toList "images" <$> getJSONWith (authorisation t) (toURI imagesEndpoint)
-                         in (droplets, w))
+                 (\ t -> let images = toList "images" <$> getJSONWith (authorisation t) (toURI imagesEndpoint)
+                         in (images, w))
                  (authToken (ask w))
+
+doListSnapshots :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> Id -> (NetT m [Image], w a)
+doListSnapshots w dropletId =
+  maybe (return [], w)
+  (\ t -> let snapshots = toList "snapshots" <$> getJSONWith (authorisation t) (toURI $ dropletsEndpoint </> show dropletId </> "snapshots")
+          in (snapshots, w))
+  (authToken (ask w))
 
 dropletFromResponse :: Either String Value -> Either String Droplet
 dropletFromResponse (Right (Object b)) = A.parseEither parseJSON (b H.! "droplet")
@@ -162,4 +169,5 @@ mkDOClient config = coiterT next start
            <*> doListKeys
            <*> doListSizes
            <*> doListImages
+           <*> doListSnapshots
     start = env config (return ())

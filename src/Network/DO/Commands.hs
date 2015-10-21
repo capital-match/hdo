@@ -18,6 +18,7 @@ data DO a = ListDroplets ([Droplet] -> a)
           | ListKeys ([Key] -> a)
           | ListSizes ([Size] -> a)
           | ListImages ([Image] -> a)
+          | ListSnapshots Id ([Image] -> a)
           deriving (Functor)
 
 -- free transformer to embed effects
@@ -48,6 +49,10 @@ listSizes = liftF $ ListSizes P.id
 listImages  :: (Monad m) => DOT m [Image]
 listImages = liftF $ ListImages P.id
 
+listDropletSnapshots :: (Monad m) => Id -> DOT m [Image]
+listDropletSnapshots did = liftF $ ListSnapshots did P.id
+
+
 -- dual type, for creating interpreters
 data CoDO m k = CoDO { listDropletsH   :: (m [Droplet], k)
                      , createDropletH  :: BoxConfiguration -> (m (Either String Droplet), k)
@@ -57,6 +62,7 @@ data CoDO m k = CoDO { listDropletsH   :: (m [Droplet], k)
                      , listKeysH       :: (m [Key], k)
                      , listSizesH      :: (m [Size], k)
                      , listImagesH     :: (m [Image], k)
+                     , listSnapshotsH  :: Id -> (m [Image], k)
                      } deriving Functor
 
 -- Cofree closure of CoDO functor
@@ -64,11 +70,12 @@ type CoDOT m = CofreeT (CoDO m)
 
 -- pair DSL with interpreter within some monadic context
 instance (Monad m) => PairingM (CoDO m) DO m where
-  pairM f (CoDO list _ _ _ _ _ _ _)    (ListDroplets k)       = pairM f list k
-  pairM f (CoDO _ create _ _ _ _ _ _)  (CreateDroplet conf k) = pairM f (create conf) k
-  pairM f (CoDO _ _ destroy _ _ _ _ _) (DestroyDroplet i k)   = pairM f (destroy i) k
-  pairM f (CoDO _ _ _ action _ _ _ _)  (DropletAction i a k)  = pairM f (action i a) k
-  pairM f (CoDO _ _ _ _ getA _ _ _)    (GetAction i i' k)        = pairM f (getA i i') k
-  pairM f (CoDO _ _ _ _  _ ks _ _)     (ListKeys k)           = pairM f ks k
-  pairM f (CoDO _ _ _ _  _ _ szs _)    (ListSizes k)          = pairM f szs k
-  pairM f (CoDO _ _ _ _ _ _ _ imgs)    (ListImages k)         = pairM f imgs k
+  pairM f (CoDO list _ _ _ _ _ _ _ _)       (ListDroplets k)       = pairM f list k
+  pairM f (CoDO _ create _ _ _ _ _ _ _)     (CreateDroplet conf k) = pairM f (create conf) k
+  pairM f (CoDO _ _ destroy _ _ _ _ _ _)    (DestroyDroplet i k)   = pairM f (destroy i) k
+  pairM f (CoDO _ _ _ action _ _ _ _ _)     (DropletAction i a k)  = pairM f (action i a) k
+  pairM f (CoDO _ _ _ _ getA _ _ _ _)       (GetAction i i' k)     = pairM f (getA i i') k
+  pairM f (CoDO _ _ _ _  _ ks _ _ _)        (ListKeys k)           = pairM f ks k
+  pairM f (CoDO _ _ _ _  _ _ szs _ _)       (ListSizes k)          = pairM f szs k
+  pairM f (CoDO _ _ _ _ _ _ _ imgs _)       (ListImages k)         = pairM f imgs k
+  pairM f (CoDO _ _ _ _ _ _ _ _  snapshots) (ListSnapshots i k)    = pairM f (snapshots i) k
