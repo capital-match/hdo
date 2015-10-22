@@ -1,7 +1,9 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE KindSignatures         #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE TypeOperators          #-}
 module Network.DO.Pairing (Pairing(..)
                , PairingM(..)
                , pairEffect
@@ -12,7 +14,9 @@ module Network.DO.Pairing (Pairing(..)
 import           Control.Comonad              (Comonad, extract)
 import           Control.Comonad.Trans.Cofree (CofreeT, unwrap)
 import           Control.Monad.Trans.Free     (FreeF (..), FreeT, runFreeT)
+import           Data.Functor.Coproduct
 import           Data.Functor.Identity        (Identity (..))
+import           Data.Functor.Product
 
 class (Functor f, Functor g) => Pairing f g where
   pair :: (a -> b -> r) -> f a -> g b -> r
@@ -31,6 +35,10 @@ class (Functor f, Functor g, Monad m) => PairingM f g m where
 
 instance (Monad m) => PairingM ((,) (m a)) ((->) a) m where
   pairM p (ma, b) g = ma >>= \ a -> p b (g a)
+
+instance (Monad m, PairingM f h m, PairingM g k m) => PairingM (Coproduct f g) (Product h k) m where
+  pairM p (Coproduct (Left f)) (Pair h _)  = pairM p f h
+  pairM p (Coproduct (Right g)) (Pair _ k) = pairM p g k
 
 pairEffect :: (Pairing f g, Comonad w, Monad m)
            => (a -> b -> r) -> CofreeT f w a -> FreeT g m b -> m r
