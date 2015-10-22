@@ -98,23 +98,11 @@ instance Listable Image where
   listEndpoint _ = imagesEndpoint
   listField _    = "images"
 
-queryList :: (ComonadEnv ToolConfiguration w, Monad m, Listable b, FromJSON b) => w a -> Proxy b -> (NetT m [b], w a)
-queryList w p = maybe (return [], w)
+queryList :: (ComonadEnv ToolConfiguration w, Monad m, Listable b, FromJSON b) => Proxy b -> w a -> (NetT m [b], w a)
+queryList p w = maybe (return [], w)
                 (\ t -> let droplets = toList (listField p) <$> getJSONWith (authorisation t) (toURI (listEndpoint p))
                         in (droplets, w))
                 (authToken (ask w))
-
-doList :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> (NetT m [Droplet], w a)
-doList w = queryList w (Proxy :: Proxy Droplet)
-
-doListKeys :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> (NetT m [Key], w a)
-doListKeys w = queryList w (Proxy :: Proxy Key)
-
-doListSizes :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> (NetT m [Size], w a)
-doListSizes w = queryList w (Proxy :: Proxy Size)
-
-doListImages :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> (NetT m [Image], w a)
-doListImages w = queryList w (Proxy :: Proxy Image)
 
 doListSnapshots :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> Id -> (NetT m [Image], w a)
 doListSnapshots w dropletId =
@@ -176,13 +164,13 @@ mkDOClient :: (Monad m) => ToolConfiguration -> CofreeT (CoDO (NetT m)) (Env Too
 mkDOClient config = coiterT next start
   where
     next = CoDO
-           <$> doList
+           <$> queryList (Proxy :: Proxy Droplet)
            <*> doCreate
            <*> doDestroyDroplet
            <*> doAction
            <*> doGetAction
-           <*> doListKeys
-           <*> doListSizes
-           <*> doListImages
+           <*> queryList (Proxy :: Proxy Key)
+           <*> queryList (Proxy :: Proxy Size)
+           <*> queryList (Proxy :: Proxy Image)
            <*> doListSnapshots
     start = env config (return ())
