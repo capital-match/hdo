@@ -19,10 +19,11 @@ import           Data.ByteString.Char8        (pack)
 import qualified Data.HashMap.Strict          as H
 import           Data.Maybe
 import           Data.Monoid
+import           Data.Proxy
 import           Data.Text                    (Text)
 import qualified Data.Vector                  as V
 import           Network.URI                  (URI, parseURI)
-import           Network.Wreq
+import           Network.Wreq                 hiding (Proxy)
 import           Prelude                      as P
 
 import           Network.DO.Commands
@@ -77,29 +78,43 @@ toList _  _         = []
 authorisation :: String -> Options
 authorisation t = defaults & header "Authorization" .~ ["Bearer " <> pack t]
 
+class Listable a where
+  listEndpoint :: Proxy a -> String
+  listField :: Proxy a -> Text
+
+instance Listable Droplet where
+  listEndpoint _ = dropletsEndpoint
+  listField _    = "droplets"
+
+instance Listable Key where
+  listEndpoint _ = keysEndpoint
+  listField _    = "ssh_keys"
+
+instance Listable Size where
+  listEndpoint _ = sizesEndpoint
+  listField _    = "sizes"
+
+instance Listable Image where
+  listEndpoint _ = imagesEndpoint
+  listField _    = "images"
+
+queryList :: (ComonadEnv ToolConfiguration w, Monad m, Listable b, FromJSON b) => w a -> Proxy b -> (NetT m [b], w a)
+queryList w p = maybe (return [], w)
+                (\ t -> let droplets = toList (listField p) <$> getJSONWith (authorisation t) (toURI (listEndpoint p))
+                        in (droplets, w))
+                (authToken (ask w))
+
 doList :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> (NetT m [Droplet], w a)
-doList w = maybe (return [], w)
-           (\ t -> let droplets = toList "droplets" <$> getJSONWith (authorisation t) (toURI dropletsEndpoint)
-                   in (droplets, w))
-           (authToken (ask w))
+doList w = queryList w (Proxy :: Proxy Droplet)
 
 doListKeys :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> (NetT m [Key], w a)
-doListKeys w = maybe (return [], w)
-               (\ t -> let droplets = toList "ssh_keys" <$> getJSONWith (authorisation t) (toURI keysEndpoint)
-                       in (droplets, w))
-               (authToken (ask w))
+doListKeys w = queryList w (Proxy :: Proxy Key)
 
 doListSizes :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> (NetT m [Size], w a)
-doListSizes w = maybe (return [], w)
-               (\ t -> let sizes = toList "sizes" <$> getJSONWith (authorisation t) (toURI sizesEndpoint)
-                       in (sizes, w))
-               (authToken (ask w))
+doListSizes w = queryList w (Proxy :: Proxy Size)
 
 doListImages :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> (NetT m [Image], w a)
-doListImages w = maybe (return [], w)
-                 (\ t -> let images = toList "images" <$> getJSONWith (authorisation t) (toURI imagesEndpoint)
-                         in (images, w))
-                 (authToken (ask w))
+doListImages w = queryList w (Proxy :: Proxy Image)
 
 doListSnapshots :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> Id -> (NetT m [Image], w a)
 doListSnapshots w dropletId =

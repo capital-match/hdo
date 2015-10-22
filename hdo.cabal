@@ -38,6 +38,7 @@ Library
                , network-uri
                , random
                , text
+               , tagged
                , time
                , transformers
                , unix
