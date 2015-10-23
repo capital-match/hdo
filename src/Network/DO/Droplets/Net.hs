@@ -88,6 +88,12 @@ doGetAction w dropletId actionId = maybe (return $ Left "no authentication token
                                            in (r, w))
                                    (authToken (ask w))
 
+doShowDroplet  :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> Id -> (NetT m (Either String Droplet), w a)
+doShowDroplet w dropletId = maybe (return $ Left "no authentication token defined", w)
+                            (\ t -> let r = dropletFromResponse . Right <$> getJSONWith (authorisation t) (toURI $ dropletsEndpoint </> show dropletId)
+                                    in (r, w))
+                            (authToken (ask w))
+
 waitForBoxToBeUp :: (Monad m) => Options -> Int -> Droplet -> NetT m (Either String Droplet)
 waitForBoxToBeUp _    0 box  = return (Right box)
 waitForBoxToBeUp opts n box  = do
@@ -107,4 +113,5 @@ dropletCommandsInterpreter = CoDropletCommands
                              <*> doAction
                              <*> doGetAction
                              <*> doListSnapshots
+                             <*> doShowDroplet
 

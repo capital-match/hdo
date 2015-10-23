@@ -106,6 +106,8 @@ parseCommandOptions ("droplets":"action":dropletId:actionId:[])
                                                          = injr ( getAction (P.read dropletId)  (P.read actionId)) >>= outputResult
 parseCommandOptions ("droplets":dropletId:"snapshots":[])
                                                          = injr ( listDropletSnapshots (P.read dropletId)) >>= outputResult
+parseCommandOptions ("droplets":dropletId:[])
+                                                         = injr ( showDroplet (P.read dropletId)) >>= outputResult
 parseCommandOptions ("images":"list":_)                  = injl listImages >>= outputResult
 parseCommandOptions ("keys":"list":_)                    = injl listKeys >>= outputResult
 parseCommandOptions ("sizes":"list":_)                   = injl listSizes >>= outputResult
