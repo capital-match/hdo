@@ -22,7 +22,8 @@ Library
   Hs-Source-Dirs:  src
   exposed-modules: Network.DO.Commands
                  , Network.DO.Types
-                 , Network.DO.Net
+                 , Network.DO.Net, Network.DO.Net.Common
+                 , Network.DO.Droplets.Commands, Network.DO.Droplets.Net
                  , Network.DO.Names, Network.DO.Pairing
                  , Network.REST, Network.DO.Pretty
   Build-Depends: aeson

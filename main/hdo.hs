@@ -5,21 +5,24 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 module Main where
 
-import           Control.Exception      (catch, throw)
-import           Control.Monad.IO.Class (MonadIO (..))
+import           Control.Exception            (catch, throw)
+import           Control.Monad.IO.Class       (MonadIO (..))
+import           Control.Monad.Trans.Free     (FreeF (..), FreeT, runFreeT)
+import           Data.Functor.Coproduct
 import           Data.Maybe
-import           Prelude                as P
+import           Prelude                      as P
 import           System.Console.GetOpt
 import           System.Environment
 import           System.IO
-import           System.IO.Error        (isDoesNotExistError)
+import           System.IO.Error              (isDoesNotExistError)
 
 import           Network.DO.Commands
+import           Network.DO.Droplets.Commands
 import           Network.DO.Names
 import           Network.DO.Net
 import           Network.DO.Pairing
-import           Network.DO.Pretty      (outputResult)
-import           Network.DO.Types       as DO
+import           Network.DO.Pretty            (outputResult)
+import           Network.DO.Types             as DO
 import           Network.REST
 
 generalOptions :: [OptDescr (ToolConfiguration -> ToolConfiguration)]
@@ -78,34 +81,34 @@ parseOptions args = do
    (opts, coms, []) ->  return ((foldl (flip P.id) d opts), coms)
    (_,_,errs)       ->  ioError(userError (concat errs  ++ usage))
 
-
-parseCommandOptions :: (MonadIO m) => [String] -> DOT m ()
-parseCommandOptions ("droplets":"create":args) = do
-  b <- liftIO defaultBox
-  case getOpt Permute createDropletOptions args of
-   (c,[],[])  -> createDroplet (foldl (flip P.id) b c) >>= outputResult
-   (_,_,errs) -> liftIO $ ioError (userError (concat errs  ++ usage))
-parseCommandOptions ("droplets":"destroy":dropletId:[]) = destroyDroplet (P.read dropletId)  >>= outputResult
-parseCommandOptions ("droplets":"list":_)               = listDroplets  >>= outputResult
-parseCommandOptions ("droplets":"power_off":dropletId:[])
-                                                         = dropletAction (P.read dropletId) DoPowerOff >>= outputResult
-parseCommandOptions ("droplets":"power_on":dropletId:[])
-                                                         = dropletAction (P.read dropletId) DoPowerOn >>= outputResult
-parseCommandOptions ("droplets":"snapshot":dropletId:snapshotName:[])
-                                                         = dropletAction (P.read dropletId) (CreateSnapshot snapshotName) >>= outputResult
-parseCommandOptions ("droplets":"action":dropletId:actionId:[])
-                                                         = getAction (P.read dropletId)  (P.read actionId) >>= outputResult
-parseCommandOptions ("droplets":dropletId:"snapshots":[])
-                                                         = listDropletSnapshots (P.read dropletId) >>= outputResult
-parseCommandOptions ("images":"list":_)                  = listImages >>= outputResult
-parseCommandOptions ("keys":"list":_)                    = listKeys >>= outputResult
-parseCommandOptions ("sizes":"list":_)                   = listSizes >>= outputResult
-parseCommandOptions e                                    = fail $ "I don't know how to interpret commands " ++ unwords e
-
 main :: IO ()
 main = do
   hSetBuffering stdin NoBuffering
   args <- getArgs
   (opts, cmds) <- parseOptions args
   runWreq $ pairEffectM (\ _ b -> return b) (mkDOClient opts) (parseCommandOptions cmds)
+
+parseCommandOptions :: (MonadIO m) => [String] -> FreeT (Coproduct DO DropletCommands) (NetT m) ()
+parseCommandOptions ("droplets":"create":args) = do
+  b <- liftIO defaultBox
+  case getOpt Permute createDropletOptions args of
+   (c,[],[])  -> injr (createDroplet (foldl (flip P.id) b c)) >>= outputResult
+   (_,_,errs) -> liftIO $ ioError (userError (concat errs  ++ usage))
+parseCommandOptions ("droplets":"destroy":dropletId:[]) = injr ( destroyDroplet (P.read dropletId) ) >>= outputResult
+parseCommandOptions ("droplets":"list":_)               = injr ( listDroplets ) >>= outputResult
+parseCommandOptions ("droplets":"power_off":dropletId:[])
+                                                         = injr ( dropletAction (P.read dropletId) DoPowerOff) >>= outputResult
+parseCommandOptions ("droplets":"power_on":dropletId:[])
+                                                         = injr ( dropletAction (P.read dropletId) DoPowerOn) >>= outputResult
+parseCommandOptions ("droplets":"snapshot":dropletId:snapshotName:[])
+                                                         = injr ( dropletAction (P.read dropletId) (CreateSnapshot snapshotName)) >>= outputResult
+parseCommandOptions ("droplets":"action":dropletId:actionId:[])
+                                                         = injr ( getAction (P.read dropletId)  (P.read actionId)) >>= outputResult
+parseCommandOptions ("droplets":dropletId:"snapshots":[])
+                                                         = injr ( listDropletSnapshots (P.read dropletId)) >>= outputResult
+parseCommandOptions ("images":"list":_)                  = injl listImages >>= outputResult
+parseCommandOptions ("keys":"list":_)                    = injl listKeys >>= outputResult
+parseCommandOptions ("sizes":"list":_)                   = injl listSizes >>= outputResult
+parseCommandOptions e                                    = fail $ "I don't know how to interpret commands " ++ unwords e
+
 

@@ -9,11 +9,13 @@ module Network.DO.Pairing (Pairing(..)
                , pairEffect
                , pairEffectM
                , pairEffect'
+               , injr, injl
                ) where
 
 import           Control.Comonad              (Comonad, extract)
 import           Control.Comonad.Trans.Cofree (CofreeT, unwrap)
-import           Control.Monad.Trans.Free     (FreeF (..), FreeT, runFreeT)
+import           Control.Monad.Trans.Free     (FreeF (..), FreeT, liftF,
+                                               runFreeT)
 import           Data.Functor.Coproduct
 import           Data.Functor.Identity        (Identity (..))
 import           Data.Functor.Product
@@ -39,6 +41,16 @@ instance (Monad m) => PairingM ((,) (m a)) ((->) a) m where
 instance (Monad m, PairingM f h m, PairingM g k m) => PairingM (Coproduct f g) (Product h k) m where
   pairM p (Coproduct (Left f)) (Pair h _)  = pairM p f h
   pairM p (Coproduct (Right g)) (Pair _ k) = pairM p g k
+
+instance (Monad m, PairingM h f m, PairingM k g m) => PairingM (Product h k) (Coproduct f g) m where
+  pairM p (Pair h _) (Coproduct (Left f))  = pairM p h f
+  pairM p (Pair _ k) (Coproduct (Right g)) = pairM p k g
+
+injl :: (Monad m, Functor f, Functor g) => f a -> FreeT (Coproduct f g) m a
+injl = liftF . Coproduct . Left
+
+injr :: (Monad m, Functor f, Functor g) => g a -> FreeT (Coproduct f g) m a
+injr = liftF . Coproduct . Right
 
 pairEffect :: (Pairing f g, Comonad w, Monad m)
            => (a -> b -> r) -> CofreeT f w a -> FreeT g m b -> m r

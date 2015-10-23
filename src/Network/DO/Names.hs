@@ -1,6 +1,6 @@
 -- |Generate random names
 -- shamelessly stolen from https://raw.githubusercontent.com/docker/docker/master/pkg/namesgenerator/names-generator.go
-module Network.DO.Names where
+module Network.DO.Names(generateName) where
 
 import           Data.Monoid
 import           System.Random
