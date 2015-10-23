@@ -9,22 +9,12 @@
 module Network.DO.Droplets.Net(dropletCommandsInterpreter) where
 
 import           Control.Applicative
-import           Control.Comonad
 import           Control.Comonad.Env.Class    (ComonadEnv, ask)
-import           Control.Comonad.Trans.Cofree (CofreeT, coiterT)
-import           Control.Comonad.Trans.Env    (Env, env)
-import           Control.Lens                 ((&), (.~))
-import           Control.Monad.Trans.Free
 import           Data.Aeson                   as A
 import qualified Data.Aeson.Types             as A
-import           Data.ByteString.Char8        (pack)
 import qualified Data.HashMap.Strict          as H
 import           Data.Maybe
-import           Data.Monoid
 import           Data.Proxy
-import           Data.Text                    (Text)
-import qualified Data.Vector                  as V
-import           Network.URI                  (URI, parseURI)
 import           Network.Wreq                 hiding (Proxy)
 import           Prelude                      as P
 

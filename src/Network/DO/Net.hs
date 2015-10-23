@@ -9,22 +9,11 @@
 module Network.DO.Net(mkDOClient) where
 
 import           Control.Applicative
-import           Control.Comonad.Env.Class    (ComonadEnv, ask)
+import           Control.Comonad.Env.Class    (ComonadEnv)
 import           Control.Comonad.Trans.Cofree (CofreeT, coiterT)
 import           Control.Comonad.Trans.Env    (Env, env)
-import           Control.Lens                 ((&), (.~))
-import           Data.Aeson                   as A
-import qualified Data.Aeson.Types             as A
-import           Data.ByteString.Char8        (pack)
 import           Data.Functor.Product
-import qualified Data.HashMap.Strict          as H
-import           Data.Maybe
-import           Data.Monoid                  hiding (Product)
 import           Data.Proxy
-import           Data.Text                    (Text)
-import qualified Data.Vector                  as V
-import           Network.URI                  (URI, parseURI)
-import           Network.Wreq                 hiding (Proxy)
 import           Prelude                      as P
 
 import           Network.DO.Commands

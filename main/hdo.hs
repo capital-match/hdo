@@ -7,7 +7,7 @@ module Main where
 
 import           Control.Exception            (catch, throw)
 import           Control.Monad.IO.Class       (MonadIO (..))
-import           Control.Monad.Trans.Free     (FreeF (..), FreeT, runFreeT)
+import           Control.Monad.Trans.Free     (FreeT)
 import           Data.Functor.Coproduct
 import           Data.Maybe
 import           Prelude                      as P

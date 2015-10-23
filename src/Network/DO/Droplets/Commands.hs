@@ -3,7 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 module Network.DO.Droplets.Commands(DropletCommands,
                                     DropletCommandsT,CoDropletCommandsT,
-                                    CoDropletCommands(CoDropletCommands),
+                                    CoDropletCommands(..),
                                     listDroplets, createDroplet, destroyDroplet, dropletAction,
                                     showDroplet, getAction, listDropletSnapshots) where
 

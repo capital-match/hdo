@@ -20,6 +20,7 @@ Library
   Default-Language:   Haskell2010
   GHC-Options:  -Wall -fno-warn-orphans -rtsopts
   Hs-Source-Dirs:  src
+  Other-Modules:  Network.REST.Commands, Network.REST.Wreq
   exposed-modules: Network.DO.Commands
                  , Network.DO.Types
                  , Network.DO.Net, Network.DO.Net.Common
