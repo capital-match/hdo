@@ -1,0 +1,3 @@
+[submodule "droplet_kit"]
+	path = droplet_kit
+	url = https://github.com/digitalocean/droplet_kit.git
