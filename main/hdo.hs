@@ -89,7 +89,7 @@ main = do
   (opts, cmds) <- parseOptions args
   runWreq $ pairEffectM (\ _ b -> return b) (mkDOClient opts) (parseCommandOptions cmds)
 
-parseCommandOptions :: (MonadIO m) => [String] -> FreeT (Coproduct DO DropletCommands) (NetT m) ()
+parseCommandOptions :: (MonadIO m) => [String] -> FreeT (Coproduct DO DropletCommands) (RESTT m) ()
 parseCommandOptions ("droplets":"create":args) = do
   b <- liftIO defaultBox
   case getOpt Permute createDropletOptions args of
@@ -109,6 +109,13 @@ parseCommandOptions ("droplets":dropletId:"snapshots":[])
                                                          = injr ( listDropletSnapshots (P.read dropletId)) >>= outputResult
 parseCommandOptions ("droplets":dropletId:[])
                                                          = injr ( showDroplet (P.read dropletId)) >>= outputResult
+parseCommandOptions ("droplets":"ssh":dropletIdOrName:[])
+                                                         = injr ( do
+                                                                     dropletId <- (findByIdOrName dropletIdOrName) <$> listDroplets
+                                                                     case dropletId of
+                                                                      (did:_) -> dropletConsole did
+                                                                      []      -> return (Left $ "no droplet with id or name " <> dropletIdOrName)
+                                                                ) >>= outputResult
 parseCommandOptions ("images":"list":_)                  = injl listImages >>= outputResult
 parseCommandOptions ("keys":"list":_)                    = injl listKeys >>= outputResult
 parseCommandOptions ("sizes":"list":_)                   = injl listSizes >>= outputResult
