@@ -20,11 +20,11 @@ Library
   Default-Language:   Haskell2010
   GHC-Options:  -Wall -fno-warn-orphans -rtsopts
   Hs-Source-Dirs:  src
-  Other-Modules:  Network.REST.Commands, Network.REST.Wreq
+  Other-Modules:  Network.REST.Commands, Network.REST.Wreq, Network.SSH
   exposed-modules: Network.DO.Commands
                  , Network.DO.Types
                  , Network.DO.Net, Network.DO.Net.Common
-                 , Network.DO.Droplets.Commands, Network.DO.Droplets.Net
+                 , Network.DO.Droplets.Commands, Network.DO.Droplets.Net, Network.DO.Droplets.Utils
                  , Network.DO.Names, Network.DO.Pairing
                  , Network.REST, Network.DO.Pretty
   Build-Depends: aeson
@@ -43,7 +43,7 @@ Library
                , tagged
                , time
                , transformers
-               , unix
+               , unix, process
                , unordered-containers
                , vector
                , wreq
@@ -59,6 +59,7 @@ Executable docean
                , iproute
                , pretty
                , unordered-containers
+               , optparse-applicative
                , bytestring
                , vector
                , network-uri

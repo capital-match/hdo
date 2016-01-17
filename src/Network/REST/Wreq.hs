@@ -12,7 +12,7 @@ import           Network.URI
 import           Network.Wreq
 
 -- | An implementation of @Net@ functor based on wreq and @IO@
-runWreq :: NetT IO r -> IO r
+runWreq :: RESTT IO r -> IO r
 runWreq r = do
   mr <- runFreeT r
   step mr

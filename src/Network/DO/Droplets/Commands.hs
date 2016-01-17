@@ -5,7 +5,8 @@ module Network.DO.Droplets.Commands(DropletCommands,
                                     DropletCommandsT,CoDropletCommandsT,
                                     CoDropletCommands(..),
                                     listDroplets, createDroplet, destroyDroplet, dropletAction,
-                                    showDroplet, getAction, listDropletSnapshots) where
+                                    showDroplet, getAction, listDropletSnapshots,
+                                    dropletConsole) where
 
 import           Control.Comonad.Trans.Cofree
 import           Control.Monad.Trans.Free
@@ -20,6 +21,7 @@ data DropletCommands a = ListDroplets ([Droplet] -> a)
                        | DropletAction Id Action (Either String ActionResult -> a)
                        | GetAction Id Id (Either String ActionResult -> a)
                        | ListSnapshots Id ([Image] -> a)
+                       | Console Id (Either String () -> a)
                        | ShowDroplet Id (Either String Droplet -> a)
                        deriving (Functor)
 
@@ -42,6 +44,9 @@ destroyDroplet did = DestroyDroplet did P.id
 dropletAction :: Id -> Action -> DropletCommands (Either String ActionResult)
 dropletAction did action = DropletAction did action P.id
 
+dropletConsole :: Id -> DropletCommands (Either String ())
+dropletConsole did = Console did P.id
+
 getAction :: Id -> Id -> DropletCommands (Either String ActionResult)
 getAction did actId = GetAction did actId P.id
 
@@ -56,6 +61,7 @@ data CoDropletCommands m k = CoDropletCommands { listDropletsH   :: (m [Droplet]
                                                , actionDropletH  :: Id -> Action -> (m (Either String ActionResult), k)
                                                , getActionH      :: Id -> Id -> (m (Either String ActionResult), k)
                                                , listSnapshotsH  :: Id -> (m [Image], k)
+                                               , consoleH        :: Id -> (m (Either String ()), k)
                                                , showDropletH    :: Id -> (m (Either String Droplet), k)
                                                } deriving Functor
 
@@ -64,10 +70,11 @@ type CoDropletCommandsT m = CofreeT (CoDropletCommands m)
 
 -- pair DSL with interpreter within some monadic context
 instance (Monad m) => PairingM (CoDropletCommands m) DropletCommands m where
-  pairM f (CoDropletCommands list _ _ _ _ _ _)       (ListDroplets k)       = pairM f list k
-  pairM f (CoDropletCommands _ create _ _ _ _ _)     (CreateDroplet conf k) = pairM f (create conf) k
-  pairM f (CoDropletCommands _ _ destroy _ _ _ _)    (DestroyDroplet i k)   = pairM f (destroy i) k
-  pairM f (CoDropletCommands _ _ _ action _ _ _)     (DropletAction i a k)  = pairM f (action i a) k
-  pairM f (CoDropletCommands _ _ _ _ getA _ _)       (GetAction i i' k)     = pairM f (getA i i') k
-  pairM f (CoDropletCommands _ _ _ _ _  snapshots _) (ListSnapshots i k)    = pairM f (snapshots i) k
-  pairM f (CoDropletCommands _ _ _ _ _  _ showD)     (ShowDroplet i k)      = pairM f (showD i) k
+  pairM f (CoDropletCommands list _ _ _ _ _ _ _)       (ListDroplets k)       = pairM f list k
+  pairM f (CoDropletCommands _ create _ _ _ _ _ _)     (CreateDroplet conf k) = pairM f (create conf) k
+  pairM f (CoDropletCommands _ _ destroy _ _ _ _ _)    (DestroyDroplet i k)   = pairM f (destroy i) k
+  pairM f (CoDropletCommands _ _ _ action _ _ _ _)     (DropletAction i a k)  = pairM f (action i a) k
+  pairM f (CoDropletCommands _ _ _ _ getA _ _ _)       (GetAction i i' k)     = pairM f (getA i i') k
+  pairM f (CoDropletCommands _ _ _ _ _  snapshots _ _) (ListSnapshots i k)    = pairM f (snapshots i) k
+  pairM f (CoDropletCommands _ _ _ _ _  _ console _)   (Console i k)          = pairM f (console i) k
+  pairM f (CoDropletCommands _ _ _ _ _  _ _ showD)     (ShowDroplet i k)      = pairM f (showD i) k

@@ -10,14 +10,15 @@ import           Control.Monad.IO.Class       (MonadIO (..))
 import           Control.Monad.Trans.Free     (FreeT)
 import           Data.Functor.Coproduct
 import           Data.Maybe
+import           Options.Applicative
 import           Prelude                      as P
-import           System.Console.GetOpt
 import           System.Environment
 import           System.IO
 import           System.IO.Error              (isDoesNotExistError)
 
 import           Network.DO.Commands
 import           Network.DO.Droplets.Commands
+import           Network.DO.Droplets.Utils
 import           Network.DO.Names
 import           Network.DO.Net
 import           Network.DO.Pairing
