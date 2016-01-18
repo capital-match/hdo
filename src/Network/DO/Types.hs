@@ -10,8 +10,8 @@
 -- See https://developers.digitalocean.com/documentation/v2/
 module Network.DO.Types where
 
-import           Data.Aeson        as A
-import           Data.Aeson.Types  as A
+import           Data.Aeson        as A hiding (Error, Result)
+import           Data.Aeson.Types  as A hiding (Error, Result)
 import           Data.Default
 import qualified Data.HashMap.Lazy as H
 import           Data.IP
@@ -27,6 +27,13 @@ type AuthToken = String
 type Slug = String
 
 type URI = String
+
+newtype Error = Error { msg :: String } deriving (Eq, Show, Read)
+
+type Result a = Either Error a
+
+error :: String -> Result a
+error = Left . Error
 
 data ToolConfiguration = Tool { slackUri  :: Maybe URI
                               , authToken :: Maybe AuthToken

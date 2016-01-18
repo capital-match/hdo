@@ -12,6 +12,9 @@ class (Show a) => Pretty a where
   pretty :: a -> Doc
   pretty = text . show
 
+instance Pretty () where
+  pretty () = text ""
+
 instance (Pretty a, Pretty b) => Pretty (Either a b) where
   pretty (Left a) = text "Error:" <+> pretty a
   pretty (Right a) = pretty a
@@ -22,6 +25,9 @@ instance (Pretty a) => Pretty (Maybe a) where
 
 instance Pretty Char where
   pretty = char
+
+instance Pretty Error where
+  pretty (Error m) = text m
 
 instance Pretty Date where
   pretty (Date d) = text $ show d

@@ -1,14 +1,18 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ViewPatterns    #-}
 module Network.DO.Droplets.Utils
        (publicIP, findByIdOrName)
        where
 
 import           Data.IP
+import           Data.Maybe
 import           Network.DO.Types
 
 -- |Lookup (first) public IP for given @Droplet@, if any.
 publicIP :: Droplet -> Maybe IP
-publicIP Droplet{..} = Nothing
+publicIP (networks -> NoNetworks)   = Nothing
+publicIP (networks -> Networks{..}) = ip_address <$> (listToMaybe $ filter ((== Public) . netType) v4)
+
 
 -- |Find the first droplet that matches given Id or name
 findByIdOrName :: String -> [ Droplet ] -> [ Droplet ]

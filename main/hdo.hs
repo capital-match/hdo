@@ -10,8 +10,9 @@ import           Control.Monad.IO.Class       (MonadIO (..))
 import           Control.Monad.Trans.Free     (FreeT)
 import           Data.Functor.Coproduct
 import           Data.Maybe
-import           Options.Applicative
-import           Prelude                      as P
+import           Data.Monoid                  ((<>))
+import           Prelude                      as P hiding (error)
+import           System.Console.GetOpt
 import           System.Environment
 import           System.IO
 import           System.IO.Error              (isDoesNotExistError)
@@ -110,12 +111,12 @@ parseCommandOptions ("droplets":dropletId:"snapshots":[])
 parseCommandOptions ("droplets":dropletId:[])
                                                          = injr ( showDroplet (P.read dropletId)) >>= outputResult
 parseCommandOptions ("droplets":"ssh":dropletIdOrName:[])
-                                                         = injr ( do
-                                                                     dropletId <- (findByIdOrName dropletIdOrName) <$> listDroplets
-                                                                     case dropletId of
-                                                                      (did:_) -> dropletConsole did
-                                                                      []      -> return (Left $ "no droplet with id or name " <> dropletIdOrName)
-                                                                ) >>= outputResult
+                                                         =  (do
+                                                                droplets <- injr $ (findByIdOrName dropletIdOrName) <$> listDroplets
+                                                                case droplets of
+                                                                 (did:_) -> injr $ dropletConsole did
+                                                                 []      -> return (error $ "no droplet with id or name " <> dropletIdOrName)
+                                                            ) >>= outputResult
 parseCommandOptions ("images":"list":_)                  = injl listImages >>= outputResult
 parseCommandOptions ("keys":"list":_)                    = injl listKeys >>= outputResult
 parseCommandOptions ("sizes":"list":_)                   = injl listSizes >>= outputResult
