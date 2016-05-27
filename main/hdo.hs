@@ -43,6 +43,9 @@ createDropletOptions = [ Option ['n'] ["name"]
                        , Option ['r'] ["region"]
                          (ReqArg ( \ r config -> config { boxRegion = RegionSlug r}) "REGION")
                          "region where the instance is to be deployed (default: 'ams2')"
+                       , Option ['b'] ["background"]
+                         (NoArg ( \ config -> config { backgroundCreate = True}))
+                         "create droplet in the background, returning immediately (default: 'false')"
                        , Option ['s'] ["size"]
                          (ReqArg ( \ s config -> config { size = read s}) "SIZE")
                          "size of instance to deploy (default: '4gb')"
@@ -63,7 +66,7 @@ getSlackUriFromEnv = (Just `fmap` getEnv "SLACK_URI") `catch` (\ (e :: IOError) 
 defaultBox :: IO BoxConfiguration
 defaultBox = do
   name <- generateName
-  return $ BoxConfiguration name (RegionSlug "ams2") G4 defaultImage [429079]
+  return $ BoxConfiguration name (RegionSlug "ams2") G4 defaultImage [429079] False
 
 defaultTool :: IO ToolConfiguration
 defaultTool = do

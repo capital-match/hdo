@@ -11,6 +11,7 @@ module Network.DO.Droplets.Net(dropletCommandsInterpreter) where
 import           Control.Applicative
 import           Control.Comonad.Env.Class    (ComonadEnv, ask)
 import           Control.Exception            (IOException)
+import           Control.Monad                (when)
 import           Control.Monad.Trans          (MonadIO)
 import           Data.Aeson                   as A hiding (Result)
 import qualified Data.Aeson.Types             as A
@@ -49,13 +50,17 @@ dropletFromResponse v                  = error $ "cannot decode JSON value to a 
 
 doCreate :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> BoxConfiguration -> (RESTT m (Result Droplet), w a)
 doCreate w config = maybe (return $ error "no authentication token defined", w)
-                    (\ t -> let opts = (authorisation t)
-                                droplets = postJSONWith opts (toURI dropletsEndpoint) (toJSON config)
-                                           >>= (\ d -> case dropletFromResponse d of
-                                                        Right b  -> waitForBoxToBeUp opts 60 b
-                                                        err      -> return err)
-                            in (droplets, w))
-                    (authToken (ask w))
+  runQuery
+  (authToken (ask w))
+  where
+    runQuery t = let opts             = authorisation t
+                     droplets         = postJSONWith opts (toURI dropletsEndpoint) (toJSON config) >>= handleResponse
+                     handleResponse d = case dropletFromResponse d of
+                       Right b  -> if (not $ backgroundCreate config)
+                                  then waitForBoxToBeUp opts 60 b
+                                  else return (Right b)
+                       err      -> return err
+                 in (droplets, w)
 
 doDestroyDroplet :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> Id -> (RESTT m (Maybe String), w a)
 doDestroyDroplet w dropletId = maybe (return $ Just "no authentication token defined", w)

@@ -119,11 +119,12 @@ type KeyId = Int
 defaultImage :: ImageSlug
 defaultImage = "ubuntu-14-04-x64"
 
-data BoxConfiguration = BoxConfiguration { configName      :: String
-                                         , boxRegion       :: Region
-                                         , size            :: SizeSlug
-                                         , configImageSlug :: ImageSlug
-                                         , keys            :: [KeyId]
+data BoxConfiguration = BoxConfiguration { configName       :: String
+                                         , boxRegion        :: Region
+                                         , size             :: SizeSlug
+                                         , configImageSlug  :: ImageSlug
+                                         , keys             :: [KeyId]
+                                         , backgroundCreate :: Bool
                                          } deriving (Show)
 
 instance ToJSON BoxConfiguration where
