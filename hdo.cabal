@@ -18,7 +18,7 @@ Extra-Source-Files:
 
 Library
   Default-Language:   Haskell2010
-  GHC-Options:  -Wall -fno-warn-orphans -rtsopts
+  GHC-Options:  -Wall -fno-warn-orphans
   Hs-Source-Dirs:  src
   Other-Modules:  Network.REST.Commands, Network.REST.Wreq, Network.SSH
   exposed-modules: Network.DO.Commands
