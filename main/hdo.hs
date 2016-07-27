@@ -26,8 +26,6 @@ import           Network.DO.Pretty            (outputResult)
 import           Network.DO.Types             as DO
 import           Network.REST
 
-
-
 generalOptions :: [OptDescr (ToolConfiguration -> ToolConfiguration)]
 generalOptions = [ Option ['t'] ["auth-token"]
                    (ReqArg ( \ t config -> config { authToken = Just t}) "STRING")
@@ -122,8 +120,7 @@ parseCommandOptions ("droplets":"ssh":dropletIdOrName:[])
                                                                  []      -> return (error $ "no droplet with id or name " <> dropletIdOrName)
                                                             ) >>= outputResult
 parseCommandOptions ("images":"list":_)                  = injl listImages >>= outputResult
+parseCommandOptions ("regions":"list":_)                 = injl listRegions >>= outputResult
 parseCommandOptions ("keys":"list":_)                    = injl listKeys >>= outputResult
 parseCommandOptions ("sizes":"list":_)                   = injl listSizes >>= outputResult
 parseCommandOptions e                                    = fail $ "I don't know how to interpret commands " ++ unwords e ++ "\n" ++ usage
-
-

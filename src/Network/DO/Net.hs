@@ -36,6 +36,9 @@ sizesURI = "sizes"
 accountURI :: String
 accountURI = "account"
 
+regionsURI :: String
+regionsURI = "regions"
+
 keysEndpoint :: String
 keysEndpoint = rootURI </> apiVersion </> accountURI </> keysURI
 
@@ -45,6 +48,8 @@ sizesEndpoint = rootURI </> apiVersion </> sizesURI
 imagesEndpoint :: String
 imagesEndpoint = rootURI </> apiVersion </> imagesURI
 
+regionsEndpoint :: String
+regionsEndpoint = rootURI </> apiVersion </> regionsURI
 
 instance Listable Key where
   listEndpoint _ = keysEndpoint
@@ -58,11 +63,16 @@ instance Listable Image where
   listEndpoint _ = imagesEndpoint
   listField _    = "images"
 
+instance Listable Region where
+  listEndpoint _ = regionsEndpoint
+  listField _    = "regions"
+
 genericCommands :: (Monad m, ComonadEnv ToolConfiguration w) => w a -> CoDO (RESTT m) (w a)
 genericCommands = CoDO
                   <$> queryList (Proxy :: Proxy Key)
                   <*> queryList (Proxy :: Proxy Size)
                   <*> queryList (Proxy :: Proxy Image)
+                  <*> queryList (Proxy :: Proxy Region)
 
 mkDOClient :: (MonadIO m) => ToolConfiguration -> CofreeT (Product (CoDO (RESTT m)) (CoDropletCommands (RESTT m))) (Env ToolConfiguration) (RESTT m ())
 mkDOClient config = coiterT next start
