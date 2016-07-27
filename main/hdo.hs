@@ -16,7 +16,6 @@ import           System.Console.GetOpt
 import           System.Environment
 import           System.IO
 import           System.IO.Error              (isDoesNotExistError)
-
 import           Network.DO.Commands
 import           Network.DO.Droplets.Commands
 import           Network.DO.Droplets.Utils
@@ -26,6 +25,8 @@ import           Network.DO.Pairing
 import           Network.DO.Pretty            (outputResult)
 import           Network.DO.Types             as DO
 import           Network.REST
+
+
 
 generalOptions :: [OptDescr (ToolConfiguration -> ToolConfiguration)]
 generalOptions = [ Option ['t'] ["auth-token"]
@@ -123,6 +124,6 @@ parseCommandOptions ("droplets":"ssh":dropletIdOrName:[])
 parseCommandOptions ("images":"list":_)                  = injl listImages >>= outputResult
 parseCommandOptions ("keys":"list":_)                    = injl listKeys >>= outputResult
 parseCommandOptions ("sizes":"list":_)                   = injl listSizes >>= outputResult
-parseCommandOptions e                                    = fail $ "I don't know how to interpret commands " ++ unwords e
+parseCommandOptions e                                    = fail $ "I don't know how to interpret commands " ++ unwords e ++ "\n" ++ usage
 
 
