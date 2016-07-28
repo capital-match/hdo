@@ -16,7 +16,6 @@ import           System.Console.GetOpt
 import           System.Environment
 import           System.IO
 import           System.IO.Error              (isDoesNotExistError)
-
 import           Network.DO.Commands
 import           Network.DO.Droplets.Commands
 import           Network.DO.Droplets.Utils
@@ -121,8 +120,7 @@ parseCommandOptions ("droplets":"ssh":dropletIdOrName:[])
                                                                  []      -> return (error $ "no droplet with id or name " <> dropletIdOrName)
                                                             ) >>= outputResult
 parseCommandOptions ("images":"list":_)                  = injl listImages >>= outputResult
+parseCommandOptions ("regions":"list":_)                 = injl listRegions >>= outputResult
 parseCommandOptions ("keys":"list":_)                    = injl listKeys >>= outputResult
 parseCommandOptions ("sizes":"list":_)                   = injl listSizes >>= outputResult
-parseCommandOptions e                                    = fail $ "I don't know how to interpret commands " ++ unwords e
-
-
+parseCommandOptions e                                    = fail $ "I don't know how to interpret commands " ++ unwords e ++ "\n" ++ usage

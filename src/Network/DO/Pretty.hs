@@ -43,7 +43,8 @@ instance Pretty NetType
 instance Pretty IP
 
 instance Pretty Region where
-  pretty Region{..}     = text regionSlug
+  pretty Region{..}     = text (regionSlug ++ ": "
+                                ++regionName)
   pretty (RegionSlug s) = text s
   pretty NoRegion       = empty
 
