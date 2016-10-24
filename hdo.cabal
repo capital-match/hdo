@@ -28,7 +28,7 @@ Library
                  , Network.DO.Names, Network.DO.Pairing
                  , Network.REST, Network.DO.Pretty
   Build-Depends: aeson
-               , base
+               , base >= 4 && < 5
                , bytestring
                , comonad
                , data-default
@@ -53,7 +53,7 @@ Executable docean
   Main-Is: hdo.hs
   GHC-Options:  -Wall -fno-warn-orphans -rtsopts -threaded
   Hs-Source-Dirs:  main
-  Build-depends: base
+  Build-depends: base >= 4 && < 5
                , hdo
                , comonad
                , iproute
