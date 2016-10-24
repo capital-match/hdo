@@ -1,5 +1,5 @@
 Name: hdo
-Version: 0.1
+Version: 0.2
 Cabal-Version: >= 1.18
 Maintainer: Arnaud Bailly <arnaud.oqube@gmail.com>
 Author: Arnaud Bailly
@@ -28,7 +28,7 @@ Library
                  , Network.DO.Names, Network.DO.Pairing
                  , Network.REST, Network.DO.Pretty
   Build-Depends: aeson
-               , base < 5
+               , base
                , bytestring
                , comonad
                , data-default
@@ -53,7 +53,7 @@ Executable docean
   Main-Is: hdo.hs
   GHC-Options:  -Wall -fno-warn-orphans -rtsopts -threaded
   Hs-Source-Dirs:  main
-  Build-depends: base < 5
+  Build-depends: base
                , hdo
                , comonad
                , iproute

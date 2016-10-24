@@ -11,7 +11,6 @@ module Network.DO.Droplets.Net(dropletCommandsInterpreter) where
 import           Control.Applicative
 import           Control.Comonad.Env.Class    (ComonadEnv, ask)
 import           Control.Exception            (IOException)
-import           Control.Monad                (when)
 import           Control.Monad.Trans          (MonadIO)
 import           Data.Aeson                   as A hiding (Result)
 import qualified Data.Aeson.Types             as A
@@ -92,7 +91,7 @@ doShowDroplet w dropletId = maybe (return $ error "no authentication token defin
                                     in (r, w))
                             (authToken (ask w))
 
-doSshInDroplet :: (ComonadEnv ToolConfiguration w, MonadIO m) => w a -> Droplet -> (RESTT m (Result ()), w a)
+doSshInDroplet :: (MonadIO m) => w a -> Droplet -> (RESTT m (Result ()), w a)
 doSshInDroplet w droplet =   let r = maybe (return $ error ("droplet " <> show droplet <> " has no public IP"))
                                      (\ip -> do
                                          s <- ssh ["root@" <> show ip ]

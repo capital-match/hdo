@@ -8,7 +8,7 @@ module Main where
 import           Control.Exception            (catch, throw)
 import           Control.Monad.IO.Class       (MonadIO (..))
 import           Control.Monad.Trans.Free     (FreeT)
-import           Data.Functor.Coproduct
+import           Data.Functor.Sum
 import           Data.Maybe
 import           Data.Monoid                  ((<>))
 import           Prelude                      as P hiding (error)
@@ -92,7 +92,7 @@ main = do
   (opts, cmds) <- parseOptions args
   runWreq $ pairEffectM (\ _ b -> return b) (mkDOClient opts) (parseCommandOptions cmds)
 
-parseCommandOptions :: (MonadIO m) => [String] -> FreeT (Coproduct DO DropletCommands) (RESTT m) ()
+parseCommandOptions :: (MonadIO m) => [String] -> FreeT (Sum DO DropletCommands) (RESTT m) ()
 parseCommandOptions ("droplets":"create":args) = do
   b <- liftIO defaultBox
   case getOpt Permute createDropletOptions args of
