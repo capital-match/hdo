@@ -5,26 +5,18 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 module Main where
 
-import           Control.Exception            (catch, throw)
-import           Control.Monad.IO.Class       (MonadIO (..))
-import           Control.Monad.Trans.Free     (FreeT)
+import           Control.Exception        (catch, throw)
+import           Control.Monad.IO.Class   (MonadIO (..))
+import           Control.Monad.Trans.Free (FreeT)
 import           Data.Functor.Sum
 import           Data.Maybe
-import           Data.Monoid                  ((<>))
-import           Prelude                      as P hiding (error)
+import           Data.Monoid              ((<>))
+import           Network.DO
+import           Prelude                  as P hiding (error)
 import           System.Console.GetOpt
 import           System.Environment
 import           System.IO
-import           System.IO.Error              (isDoesNotExistError)
-import           Network.DO.Commands
-import           Network.DO.Droplets.Commands
-import           Network.DO.Droplets.Utils
-import           Network.DO.Names
-import           Network.DO.Net
-import           Network.DO.Pairing
-import           Network.DO.Pretty            (outputResult)
-import           Network.DO.Types             as DO
-import           Network.REST
+import           System.IO.Error          (isDoesNotExistError)
 
 generalOptions :: [OptDescr (ToolConfiguration -> ToolConfiguration)]
 generalOptions = [ Option ['t'] ["auth-token"]
@@ -55,9 +47,6 @@ createDropletOptions = [ Option ['n'] ["name"]
                          (ReqArg ( \ k config -> config { keys = read k ++ keys config}) "[KEY1,..]")
                          "add a key to access box (default: '[]')"
                        ]
-
-getAuthFromEnv :: IO (Maybe AuthToken)
-getAuthFromEnv = (Just `fmap` getEnv "AUTH_TOKEN") `catch` (\ (e :: IOError) -> if isDoesNotExistError e then return Nothing else throw e)
 
 getSlackUriFromEnv :: IO (Maybe URI)
 getSlackUriFromEnv = (Just `fmap` getEnv "SLACK_URI") `catch` (\ (e :: IOError) -> if isDoesNotExistError e then return Nothing else throw e)
@@ -90,37 +79,37 @@ main = do
   hSetBuffering stdin NoBuffering
   args <- getArgs
   (opts, cmds) <- parseOptions args
-  runWreq $ pairEffectM (\ _ b -> return b) (mkDOClient opts) (parseCommandOptions cmds)
+  runDOEnv (parseCommandOptions cmds)
 
-parseCommandOptions :: (MonadIO m) => [String] -> FreeT (Sum DO DropletCommands) (RESTT m) ()
+parseCommandOptions :: (MonadIO m) => [String] -> Command m ()
 parseCommandOptions ("droplets":"create":args) = do
   b <- liftIO defaultBox
   case getOpt Permute createDropletOptions args of
-   (c,[],[])  -> injr (createDroplet (foldl (flip P.id) b c)) >>= outputResult
+   (c,[],[])  -> createDroplet (foldl (flip P.id) b c) >>= outputResult
    (_,_,errs) -> liftIO $ ioError (userError (concat errs  ++ usage))
-parseCommandOptions ("droplets":"destroy":dropletId:[]) = injr ( destroyDroplet (P.read dropletId) ) >>= outputResult
-parseCommandOptions ("droplets":"list":_)               = injr ( listDroplets ) >>= outputResult
+parseCommandOptions ("droplets":"destroy":dropletId:[]) = destroyDroplet (P.read dropletId) >>= outputResult
+parseCommandOptions ("droplets":"list":_)               = listDroplets >>= outputResult
 parseCommandOptions ("droplets":"power_off":dropletId:[])
-                                                         = injr ( dropletAction (P.read dropletId) DoPowerOff) >>= outputResult
+                                                         = dropletAction (P.read dropletId) DoPowerOff >>= outputResult
 parseCommandOptions ("droplets":"power_on":dropletId:[])
-                                                         = injr ( dropletAction (P.read dropletId) DoPowerOn) >>= outputResult
+                                                         = dropletAction (P.read dropletId) DoPowerOn >>= outputResult
 parseCommandOptions ("droplets":"snapshot":dropletId:snapshotName:[])
-                                                         = injr ( dropletAction (P.read dropletId) (CreateSnapshot snapshotName)) >>= outputResult
+                                                         = dropletAction (P.read dropletId) (CreateSnapshot snapshotName) >>= outputResult
 parseCommandOptions ("droplets":"action":dropletId:actionId:[])
-                                                         = injr ( getAction (P.read dropletId)  (P.read actionId)) >>= outputResult
+                                                         = getAction (P.read dropletId)  (P.read actionId) >>= outputResult
 parseCommandOptions ("droplets":dropletId:"snapshots":[])
-                                                         = injr ( listDropletSnapshots (P.read dropletId)) >>= outputResult
+                                                         = listDropletSnapshots (P.read dropletId) >>= outputResult
 parseCommandOptions ("droplets":dropletId:[])
-                                                         = injr ( showDroplet (P.read dropletId)) >>= outputResult
+                                                         = showDroplet (P.read dropletId) >>= outputResult
 parseCommandOptions ("droplets":"ssh":dropletIdOrName:[])
                                                          =  (do
-                                                                droplets <- injr $ (findByIdOrName dropletIdOrName) <$> listDroplets
+                                                                droplets <- findByIdOrName dropletIdOrName <$> listDroplets
                                                                 case droplets of
-                                                                 (did:_) -> injr $ dropletConsole did
+                                                                 (did:_) -> dropletConsole did
                                                                  []      -> return (error $ "no droplet with id or name " <> dropletIdOrName)
                                                             ) >>= outputResult
-parseCommandOptions ("images":"list":_)                  = injl listImages >>= outputResult
-parseCommandOptions ("regions":"list":_)                 = injl listRegions >>= outputResult
-parseCommandOptions ("keys":"list":_)                    = injl listKeys >>= outputResult
-parseCommandOptions ("sizes":"list":_)                   = injl listSizes >>= outputResult
+parseCommandOptions ("images":"list":_)                  = listImages >>= outputResult
+parseCommandOptions ("regions":"list":_)                 = listRegions >>= outputResult
+parseCommandOptions ("keys":"list":_)                    = listKeys >>= outputResult
+parseCommandOptions ("sizes":"list":_)                   = listSizes >>= outputResult
 parseCommandOptions e                                    = fail $ "I don't know how to interpret commands " ++ unwords e ++ "\n" ++ usage
