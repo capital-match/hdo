@@ -85,6 +85,13 @@ instance Pretty ActionResult where
   pretty ActionResult{..} = brackets (integer actionId) <+> pretty actionStartedAt <+> text "->" <+> pretty actionCompletedAt $$
                             (nest 5 $ integer actionResourceId <+> text (show actionType) <> char ':' <+> text (show actionStatus))
 
+instance Pretty FloatingIP where
+  pretty FloatingIP{..} =
+    case floatingDroplet of
+      Nothing -> ipAndRegion <+> text "?"
+      Just d  -> ipAndRegion <+> integer (dropletId d) <> char '/' <> text (name d)
+    where
+      ipAndRegion = text floatingIp <> text "/" <>  text (regionSlug floatingRegion) <+> text "->"
+
 outputResult :: (Pretty a, MonadIO m) => a -> m  ()
 outputResult = liftIO . putStrLn . render . pretty
-

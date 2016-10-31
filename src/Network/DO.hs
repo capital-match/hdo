@@ -1,10 +1,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators       #-}
 module Network.DO(
   -- * Types
   Command,
   module Network.DO.Types,
   -- * Generic Commands
-  listKeys, listSizes, listRegions, listImages,
+  listKeys, listSizes, listRegions, listImages, listFloatingIPs,
   -- * Droplets Commands
   listDroplets, createDroplet, showDroplet, destroyDroplet,
   dropletAction, dropletConsole, getAction, listDropletSnapshots,
@@ -15,7 +16,6 @@ module Network.DO(
 
 import           Control.Exception            (catch, throw)
 import           Control.Monad.Trans.Free
-import           Data.Functor.Sum
 import qualified Network.DO.Commands          as C
 import qualified Network.DO.Droplets.Commands as C
 import           Network.DO.Droplets.Utils
@@ -28,7 +28,7 @@ import           Network.REST
 import           System.Environment           (getEnv)
 import           System.IO.Error              (isDoesNotExistError)
 
-type Command w a = FreeT (Sum C.DO C.DropletCommands) (RESTT w) a
+type Command w a = FreeT (C.DO :+: C.DropletCommands) (RESTT w) a
 
 listKeys :: (Monad w) => Command w [Key]
 listKeys = injl C.listKeys
@@ -41,6 +41,9 @@ listImages = injl C.listImages
 
 listRegions :: (Monad w) => Command w [Region]
 listRegions = injl C.listRegions
+
+listFloatingIPs :: (Monad w) => Command w [FloatingIP]
+listFloatingIPs = injl C.listFloatingIPs
 
 listDroplets :: (Monad w) => Command w [Droplet]
 listDroplets = injr $ C.listDroplets

@@ -5,18 +5,16 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 module Main where
 
-import           Control.Exception        (catch, throw)
-import           Control.Monad.IO.Class   (MonadIO (..))
-import           Control.Monad.Trans.Free (FreeT)
-import           Data.Functor.Sum
+import           Control.Exception      (catch, throw)
+import           Control.Monad.IO.Class (MonadIO (..))
 import           Data.Maybe
-import           Data.Monoid              ((<>))
+import           Data.Monoid            ((<>))
 import           Network.DO
-import           Prelude                  as P hiding (error)
+import           Prelude                as P hiding (error)
 import           System.Console.GetOpt
 import           System.Environment
 import           System.IO
-import           System.IO.Error          (isDoesNotExistError)
+import           System.IO.Error        (isDoesNotExistError)
 
 generalOptions :: [OptDescr (ToolConfiguration -> ToolConfiguration)]
 generalOptions = [ Option ['t'] ["auth-token"]
@@ -78,7 +76,7 @@ main :: IO ()
 main = do
   hSetBuffering stdin NoBuffering
   args <- getArgs
-  (opts, cmds) <- parseOptions args
+  (_, cmds) <- parseOptions args
   runDOEnv (parseCommandOptions cmds)
 
 parseCommandOptions :: (MonadIO m) => [String] -> Command m ()
@@ -112,4 +110,5 @@ parseCommandOptions ("images":"list":_)                  = listImages >>= output
 parseCommandOptions ("regions":"list":_)                 = listRegions >>= outputResult
 parseCommandOptions ("keys":"list":_)                    = listKeys >>= outputResult
 parseCommandOptions ("sizes":"list":_)                   = listSizes >>= outputResult
+parseCommandOptions ("ips":"list":_)                     = listFloatingIPs >>= outputResult
 parseCommandOptions e                                    = fail $ "I don't know how to interpret commands " ++ unwords e ++ "\n" ++ usage

@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeOperators          #-}
 module Network.DO.Pairing (Pairing(..)
                , PairingM(..)
+               , (:+:), (:*:)
                , pairEffect
                , pairEffectM
                , pairEffect'
@@ -16,9 +17,13 @@ import           Control.Comonad              (Comonad, extract)
 import           Control.Comonad.Trans.Cofree (CofreeT, unwrap)
 import           Control.Monad.Trans.Free     (FreeF (..), FreeT, liftF,
                                                runFreeT)
-import           Data.Functor.Sum
 import           Data.Functor.Identity        (Identity (..))
 import           Data.Functor.Product
+import           Data.Functor.Sum
+
+type a :+: b = Sum a b
+
+type a :*: b = Product a b
 
 class (Functor f, Functor g) => Pairing f g where
   pair :: (a -> b -> r) -> f a -> g b -> r

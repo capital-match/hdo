@@ -39,6 +39,9 @@ accountURI = "account"
 regionsURI :: String
 regionsURI = "regions"
 
+floatingIpsURI :: String
+floatingIpsURI = "floating_ips"
+
 keysEndpoint :: String
 keysEndpoint = rootURI </> apiVersion </> accountURI </> keysURI
 
@@ -50,6 +53,9 @@ imagesEndpoint = rootURI </> apiVersion </> imagesURI
 
 regionsEndpoint :: String
 regionsEndpoint = rootURI </> apiVersion </> regionsURI
+
+floatingIpsEndpoint :: String
+floatingIpsEndpoint = rootURI </> apiVersion </> floatingIpsURI
 
 instance Listable Key where
   listEndpoint _ = keysEndpoint
@@ -67,12 +73,17 @@ instance Listable Region where
   listEndpoint _ = regionsEndpoint
   listField _    = "regions"
 
+instance Listable FloatingIP where
+  listEndpoint _ = floatingIpsEndpoint
+  listField _    = "floating_ips"
+
 genericCommands :: (Monad m, ComonadEnv ToolConfiguration w) => w a -> CoDO (RESTT m) (w a)
 genericCommands = CoDO
                   <$> queryList (Proxy :: Proxy Key)
                   <*> queryList (Proxy :: Proxy Size)
                   <*> queryList (Proxy :: Proxy Image)
                   <*> queryList (Proxy :: Proxy Region)
+                  <*> queryList (Proxy :: Proxy FloatingIP)
 
 mkDOClient :: (MonadIO m) => ToolConfiguration -> CofreeT (Product (CoDO (RESTT m)) (CoDropletCommands (RESTT m))) (Env ToolConfiguration) (RESTT m ())
 mkDOClient config = coiterT next start

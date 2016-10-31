@@ -491,3 +491,20 @@ instance FromJSON DomainRecord where
 
 failParse :: (Show a1, Monad m) => a1 -> m a
 failParse e = fail $ "cannot parse " <> show e
+
+-- | Floating IPs
+-- https://developers.digitalocean.com/documentation/v2/#floating-ips
+
+data FloatingIP = FloatingIP { floatingIp      :: String
+                             , floatingDroplet :: Maybe Droplet
+                             , floatingRegion  :: Region
+                             } deriving (Show)
+
+instance FromJSON FloatingIP where
+  parseJSON (Object o) = FloatingIP
+                         <$> o .: "ip"
+                         <*> o .:? "droplet"
+                         <*> o .: "region"
+
+  parseJSON e          = failParse e
+
