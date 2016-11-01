@@ -111,4 +111,9 @@ parseCommandOptions ("regions":"list":_)                 = listRegions >>= outpu
 parseCommandOptions ("keys":"list":_)                    = listKeys >>= outputResult
 parseCommandOptions ("sizes":"list":_)                   = listSizes >>= outputResult
 parseCommandOptions ("ips":"list":_)                     = listFloatingIPs >>= outputResult
+parseCommandOptions ("ips":"create":dropletOrRegion:[])     = do
+  regions <- listRegions
+  outputResult =<< if dropletOrRegion `elem` map regionSlug regions
+    then createFloatingIP (TargetRegion dropletOrRegion)
+    else createFloatingIP (TargetDroplet $ read dropletOrRegion)
 parseCommandOptions e                                    = fail $ "I don't know how to interpret commands " ++ unwords e ++ "\n" ++ usage

@@ -508,3 +508,11 @@ instance FromJSON FloatingIP where
 
   parseJSON e          = failParse e
 
+data FloatingIPTarget = TargetRegion Slug
+                      | TargetDroplet Id
+                        deriving (Show)
+
+instance ToJSON FloatingIPTarget where
+  toJSON (TargetRegion r)  = object [ "region" .= r ]
+  toJSON (TargetDroplet i) = object [ "droplet_id" .= i ]
+

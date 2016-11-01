@@ -43,10 +43,6 @@ doListSnapshots w dropletId =
           in (snapshots, w))
   (authToken (ask w))
 
-dropletFromResponse :: Either String Value -> Result Droplet
-dropletFromResponse (Right (Object b)) = either error (Right . id) $ A.parseEither parseJSON (b H.! "droplet")
-dropletFromResponse v                  = error $ "cannot decode JSON value to a droplet " ++ show v
-
 doCreate :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> BoxConfiguration -> (RESTT m (Result Droplet), w a)
 doCreate w config = maybe (return $ error "no authentication token defined", w)
   runQuery
@@ -54,7 +50,7 @@ doCreate w config = maybe (return $ error "no authentication token defined", w)
   where
     runQuery t = let opts             = authorisation t
                      droplets         = postJSONWith opts (toURI dropletsEndpoint) (toJSON config) >>= handleResponse
-                     handleResponse d = case dropletFromResponse d of
+                     handleResponse d = case fromResponse "droplet" d of
                        Right b  -> if (not $ backgroundCreate config)
                                   then waitForBoxToBeUp opts 60 b
                                   else return (Right b)
@@ -87,7 +83,7 @@ doGetAction w dropletId actionId = maybe (return $ error "no authentication toke
 
 doShowDroplet  :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> Id -> (RESTT m (Result Droplet), w a)
 doShowDroplet w dropletId = maybe (return $ error "no authentication token defined", w)
-                            (\ t -> let r = dropletFromResponse . Right <$> getJSONWith (authorisation t) (toURI $ dropletsEndpoint </> show dropletId)
+                            (\ t -> let r = fromResponse "droplet" . Right <$> getJSONWith (authorisation t) (toURI $ dropletsEndpoint </> show dropletId)
                                     in (r, w))
                             (authToken (ask w))
 
@@ -107,7 +103,7 @@ waitForBoxToBeUp _    0 box  = return (Right box)
 waitForBoxToBeUp opts n box  = do
   waitFor 1000000 ("waiting for droplet " ++ name box ++ " to become Active: " ++ show (n) ++ "s")
   b <- getJSONWith opts (toURI $ dropletsEndpoint </> show (dropletId box))
-  case dropletFromResponse (Right b) of
+  case fromResponse "droplet" (Right b) of
    Right box'-> if status box' == Active
                 then return (Right box')
                 else waitForBoxToBeUp opts (n-1) box'

@@ -11,6 +11,7 @@ module Network.DO.Pairing (Pairing(..)
                , pairEffectM
                , pairEffect'
                , injr, injl
+               , injrl, injrr
                ) where
 
 import           Control.Comonad              (Comonad, extract)
@@ -23,7 +24,11 @@ import           Data.Functor.Sum
 
 type a :+: b = Sum a b
 
+infixr 1 :+:
+
 type a :*: b = Product a b
+
+infixr 2 :*:
 
 class (Functor f, Functor g) => Pairing f g where
   pair :: (a -> b -> r) -> f a -> g b -> r
@@ -56,6 +61,12 @@ injl = liftF . InL
 
 injr :: (Monad m, Functor f, Functor g) => g a -> FreeT (Sum f g) m a
 injr = liftF . InR
+
+injrl :: (Monad m, Functor f, Functor g, Functor h) => g a -> FreeT (Sum f (Sum g h)) m a
+injrl = liftF . InR . InL
+
+injrr :: (Monad m, Functor f, Functor g, Functor h) => h a -> FreeT (Sum f (Sum g h)) m a
+injrr = liftF . InR . InR
 
 pairEffect :: (Pairing f g, Comonad w, Monad m)
            => (a -> b -> r) -> CofreeT f w a -> FreeT g m b -> m r

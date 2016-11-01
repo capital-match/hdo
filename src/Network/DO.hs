@@ -5,10 +5,12 @@ module Network.DO(
   Command,
   module Network.DO.Types,
   -- * Generic Commands
-  listKeys, listSizes, listRegions, listImages, listFloatingIPs,
+  listKeys, listSizes, listRegions, listImages,
   -- * Droplets Commands
   listDroplets, createDroplet, showDroplet, destroyDroplet,
   dropletAction, dropletConsole, getAction, listDropletSnapshots,
+  -- * Floating IPs Commands
+  listFloatingIPs, createFloatingIP,
   -- * Utilities
   runDOEnv, getAuthFromEnv, outputResult,
   generateName,
@@ -19,6 +21,7 @@ import           Control.Monad.Trans.Free
 import qualified Network.DO.Commands          as C
 import qualified Network.DO.Droplets.Commands as C
 import           Network.DO.Droplets.Utils
+import qualified Network.DO.IP.Commands       as C
 import           Network.DO.Names
 import           Network.DO.Net
 import           Network.DO.Pairing
@@ -28,7 +31,7 @@ import           Network.REST
 import           System.Environment           (getEnv)
 import           System.IO.Error              (isDoesNotExistError)
 
-type Command w a = FreeT (C.DO :+: C.DropletCommands) (RESTT w) a
+type Command w a = FreeT (C.DO :+: C.DropletCommands :+: C.IPCommands) (RESTT w) a
 
 listKeys :: (Monad w) => Command w [Key]
 listKeys = injl C.listKeys
@@ -43,31 +46,34 @@ listRegions :: (Monad w) => Command w [Region]
 listRegions = injl C.listRegions
 
 listFloatingIPs :: (Monad w) => Command w [FloatingIP]
-listFloatingIPs = injl C.listFloatingIPs
+listFloatingIPs = injrr C.listFloatingIPs
+
+createFloatingIP :: (Monad w) => FloatingIPTarget -> Command w (Result FloatingIP)
+createFloatingIP = injrr . C.createFloatingIP
 
 listDroplets :: (Monad w) => Command w [Droplet]
-listDroplets = injr $ C.listDroplets
+listDroplets = injrl C.listDroplets
 
 createDroplet :: (Monad w) => BoxConfiguration -> Command w (Either Error Droplet)
-createDroplet = injr . C.createDroplet
+createDroplet = injrl . C.createDroplet
 
 showDroplet :: (Monad w) => Integer -> Command w (Either Error Droplet)
-showDroplet = injr . C.showDroplet
+showDroplet = injrl . C.showDroplet
 
 destroyDroplet :: (Monad w) => Integer -> Command w (Maybe String)
-destroyDroplet = injr . C.destroyDroplet
+destroyDroplet = injrl . C.destroyDroplet
 
 dropletAction :: (Monad w) => Id -> Action -> Command w (Result ActionResult)
-dropletAction did = injr . C.dropletAction did
+dropletAction did = injrl . C.dropletAction did
 
 dropletConsole :: (Monad w) => Droplet -> Command w (Result ())
-dropletConsole = injr . C.dropletConsole
+dropletConsole = injrl . C.dropletConsole
 
 getAction :: (Monad w) => Id -> Id -> Command w (Result ActionResult)
-getAction  did = injr . C.getAction did
+getAction  did = injrl . C.getAction did
 
 listDropletSnapshots :: (Monad w) => Id -> Command w [Image]
-listDropletSnapshots = injr . C.listDropletSnapshots
+listDropletSnapshots = injrl . C.listDropletSnapshots
 
 -- | Run DO actions, extracting authentication token from environment variable `AUTH_TOKEN`
 runDOEnv :: Command IO a -> IO a
