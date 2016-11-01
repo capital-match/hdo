@@ -19,6 +19,7 @@ import           Data.Proxy
 import           Prelude                      as P
 
 import           Network.DO.Commands
+import           Network.DO.Domain
 import           Network.DO.Droplets.Commands
 import           Network.DO.Droplets.Net
 import           Network.DO.IP
@@ -78,13 +79,16 @@ genericCommands = CoDO
                   <*> queryList (Proxy :: Proxy Region)
 
 mkDOClient :: (MonadIO m) => ToolConfiguration
-           -> CofreeT (CoDO (RESTT m) :*: CoDropletCommands (RESTT m) :*: CoIPCommands (RESTT m)) (Env ToolConfiguration) (RESTT m ())
+           -> CofreeT (CoDO (RESTT m) :*: CoDropletCommands (RESTT m) :*: CoIPCommands (RESTT m) :*: CoDomainCommands (RESTT m)) (Env ToolConfiguration) (RESTT m ())
 mkDOClient config = coiterT next start
   where
     next = Pair
            <$> genericCommands
            <*> (Pair
                  <$> dropletCommandsInterpreter
-                 <*> ipCommandsInterpreter
+                 <*> (Pair
+                      <$> ipCommandsInterpreter
+                      <*> dnsCommandsInterpreter
+                     )
                )
     start = env config (return ())

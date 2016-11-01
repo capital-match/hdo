@@ -119,4 +119,7 @@ parseCommandOptions ("ips":"create":dropletOrRegion:[])  = do
 parseCommandOptions ("ips":"delete":ip:[])     = deleteFloatingIP (P.read ip) >>= outputResult
 parseCommandOptions ("ips":ip:"assign":did:[]) = assignFloatingIP (P.read ip) (P.read did) >>= outputResult
 parseCommandOptions ("ips":ip:"unassign": [])  = unassignFloatingIP (P.read ip) >>= outputResult
+parseCommandOptions ("dns":"list":_)             = listDomains >>= outputResult
+parseCommandOptions ("dns":"create":name:ip:[])  = createDomain (P.read name) (P.read ip) >>= outputResult
+parseCommandOptions ("dns":"delete":name:[])     = deleteDomain (P.read name) >>= outputResult
 parseCommandOptions e                          = fail $ "I don't know how to interpret commands " ++ unwords e ++ "\n" ++ usage

@@ -25,6 +25,7 @@ Library
                  , Network.DO.Commands
                  , Network.DO.Droplets.Commands, Network.DO.Droplets.Net, Network.DO.Droplets.Utils
                  , Network.DO.IP, Network.DO.IP.Commands, Network.DO.IP.Net
+                 , Network.DO.Domain, Network.DO.Domain.Commands, Network.DO.Domain.Net
                  , Network.DO.Names, Network.DO.Pairing
                  , Network.REST, Network.DO.Pretty
                  

@@ -97,5 +97,10 @@ instance Pretty FloatingIP where
 
 instance Pretty IPActionType
 
+instance Pretty Domain where
+  pretty Domain{..} = text (domain domainName) $$
+                      maybe mempty (nest 5 . vcat . map text .lines) zone_file
+
 outputResult :: (Pretty a, MonadIO m) => a -> m  ()
 outputResult = liftIO . putStrLn . render . pretty
+

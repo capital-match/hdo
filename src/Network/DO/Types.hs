@@ -17,7 +17,7 @@ import qualified Data.HashMap.Lazy as H
 import           Data.IP
 import           Data.List         (elemIndex)
 import           Data.Monoid       ((<>))
-import           Data.Text         (unpack)
+import           Data.Text         (pack, unpack)
 import           Data.Time         (UTCTime)
 import           GHC.Generics
 
@@ -73,7 +73,6 @@ instance Show Region where
                         ", regionAvailable = " <> show regionAvailable <>
                         "}"
 
-
 instance FromJSON Region where
   parseJSON (String s) = return $ RegionSlug (unpack s)
   parseJSON (Object o) = if H.null o
@@ -84,7 +83,6 @@ instance FromJSON Region where
                               <*> o .: "sizes"
                               <*> o .: "available"
   parseJSON e          = failParse e
-
 
 -- | String representation of size slugs
 -- This maps to corresponding expected JSON string value.
@@ -200,6 +198,9 @@ data Network a = NetworkV4 { ip_address :: IP
 instance FromJSON IP where
   parseJSON (String s) = return $ read $ unpack s
   parseJSON e          = fail $ "cannot parse IP " <> show e
+
+instance ToJSON IP where
+  toJSON = String . pack . show
 
 instance FromJSON NetType where
   parseJSON (String s) = case s of
@@ -370,7 +371,6 @@ instance FromJSON Size where
 
   parseJSON e          = failParse e
 
-
 -- * Droplets Actions
 
 -- | Type of action status
@@ -444,9 +444,25 @@ instance ToJSON Action where
 -- |Type of Domain zones
 --
 -- https://developers.digitalocean.com/documentation/v2/#domains
-data Domain = Domain { domainName :: String
-                     , domainTTL  :: Int
-                     , zone_file  :: String
+
+newtype DomainName = DomainName { domain :: String }
+
+instance Show DomainName where
+  show = domain
+
+instance Read DomainName where
+  readsPrec _ s = [(DomainName s,[])]
+
+instance FromJSON DomainName where
+  parseJSON (String s) = pure $ DomainName $ unpack s
+  parseJSON e          = failParse e
+
+instance ToJSON DomainName where
+  toJSON (DomainName n) = String (pack n)
+
+data Domain = Domain { domainName :: DomainName
+                     , domainTTL  :: Maybe Int
+                     , zone_file  :: Maybe String
                      } deriving (Show)
 
 instance FromJSON Domain where
@@ -456,6 +472,13 @@ instance FromJSON Domain where
                          <*> o .: "zone_file"
 
   parseJSON e          = failParse e
+
+data DomainConfig = DomainConfig DomainName IP
+
+instance ToJSON DomainConfig where
+  toJSON (DomainConfig name ip) = object [ "name" .= name
+                                         , "ip_address" .= ip
+                                         ]
 
 -- | Enumeration of possible DNS records types
 data DNSType = A | CNAME | TXT | PTR | SRV | NS | AAAA | MX
@@ -522,8 +545,8 @@ data IPAction = AssignIP Id
 
 instance ToJSON IPAction where
   toJSON (AssignIP did) = object [ "type" .= ("assign" :: String)
-                               , "droplet_id" .= did
-                               ]
+                                 , "droplet_id" .= did
+                                 ]
   toJSON UnassignIP     = object [ "type" .= ("unassign" :: String)]
 
 data IPActionType = Assign

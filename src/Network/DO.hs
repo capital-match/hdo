@@ -11,6 +11,8 @@ module Network.DO(
   dropletAction, dropletConsole, getAction, listDropletSnapshots,
   -- * Floating IPs Commands
   listFloatingIPs, createFloatingIP, deleteFloatingIP, assignFloatingIP, unassignFloatingIP,
+  -- * Domains Commands
+  listDomains, createDomain, deleteDomain,
   -- * Utilities
   runDOEnv, getAuthFromEnv, outputResult,
   generateName,
@@ -20,6 +22,7 @@ import           Control.Exception            (catch, throw)
 import           Control.Monad.Trans.Free
 import           Data.IP
 import qualified Network.DO.Commands          as C
+import qualified Network.DO.Domain            as C
 import qualified Network.DO.Droplets.Commands as C
 import           Network.DO.Droplets.Utils
 import qualified Network.DO.IP.Commands       as C
@@ -32,7 +35,7 @@ import           Network.REST
 import           System.Environment           (getEnv)
 import           System.IO.Error              (isDoesNotExistError)
 
-type Command w a = FreeT (C.DO :+: C.DropletCommands :+: C.IPCommands) (RESTT w) a
+type Command w a = FreeT (C.DO :+: C.DropletCommands :+: C.IPCommands :+: C.DomainCommands) (RESTT w) a
 
 listKeys :: (Monad w) => Command w [Key]
 listKeys = injl C.listKeys
@@ -47,19 +50,28 @@ listRegions :: (Monad w) => Command w [Region]
 listRegions = injl C.listRegions
 
 listFloatingIPs :: (Monad w) => Command w [FloatingIP]
-listFloatingIPs = injrr C.listFloatingIPs
+listFloatingIPs = injrrl C.listFloatingIPs
 
 createFloatingIP :: (Monad w) => FloatingIPTarget -> Command w (Result FloatingIP)
-createFloatingIP = injrr . C.createFloatingIP
+createFloatingIP = injrrl . C.createFloatingIP
 
 deleteFloatingIP :: (Monad w) => IP -> Command w (Maybe String)
-deleteFloatingIP = injrr . C.deleteFloatingIP
+deleteFloatingIP = injrrl . C.deleteFloatingIP
 
 assignFloatingIP :: (Monad w) => IP -> Id -> Command w (Result (ActionResult IPActionType))
-assignFloatingIP ip did = injrr $ C.floatingIPAction ip (AssignIP did)
+assignFloatingIP ip did = injrrl $ C.floatingIPAction ip (AssignIP did)
 
 unassignFloatingIP :: (Monad w) => IP -> Command w (Result (ActionResult IPActionType))
-unassignFloatingIP ip = injrr $ C.floatingIPAction ip UnassignIP
+unassignFloatingIP ip = injrrl $ C.floatingIPAction ip UnassignIP
+
+listDomains :: (Monad w) => Command w [Domain]
+listDomains = injrrr C.listDomains
+
+createDomain :: (Monad w) => DomainName -> IP -> Command w (Result Domain)
+createDomain name ip = injrrr $ C.createDomain name ip
+
+deleteDomain :: (Monad w) => DomainName -> Command w (Maybe String)
+deleteDomain = injrrr . C.deleteDomain
 
 listDroplets :: (Monad w) => Command w [Droplet]
 listDroplets = injrl C.listDroplets

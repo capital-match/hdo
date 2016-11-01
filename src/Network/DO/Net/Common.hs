@@ -19,6 +19,7 @@ import           Network.REST
 import           Network.URI               (URI, parseURI)
 import           Network.Wreq              hiding (Proxy)
 import           Prelude                   as P hiding (error)
+import qualified Prelude                   as P
 
 rootURI :: String
 rootURI = "https://api.digitalocean.com"
@@ -31,7 +32,7 @@ s </> ('/': s') = s ++ s'
 s </> s'        = s ++ "/" ++ s'
 
 toURI :: String -> URI
-toURI = fromJust . parseURI
+toURI s = maybe (P.error $ "cannot parse URI from " ++ s) id $ parseURI s
 
 toList :: (FromJSON a) => Text -> Value -> [a]
 toList k (Object o) = let Array boxes = o  H.! k
