@@ -101,6 +101,16 @@ instance Pretty Domain where
   pretty Domain{..} = text (domain domainName) $$
                       maybe mempty (nest 5 . vcat . map text .lines) zone_file
 
+instance Pretty DomainRecord where
+  pretty DomainRecord{..} = brackets (integer recordId) <+> pretty recordType <+> text recordName <+> text recordData
+                            <+> prettyInt recordPriority
+                            <+> prettyInt recordPort
+                            <+> prettyInt recordWeight
+    where
+      prettyInt = maybe (char '-') int
+
+instance Pretty DNSType
+
 outputResult :: (Pretty a, MonadIO m) => a -> m  ()
 outputResult = liftIO . putStrLn . render . pretty
 

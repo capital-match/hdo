@@ -20,7 +20,7 @@ import           Data.Monoid       ((<>))
 import           Data.Text         (pack, unpack)
 import           Data.Time         (UTCTime)
 import           GHC.Generics
-
+import qualified Text.Parsec       as P
 
 type AuthToken = String
 
@@ -494,9 +494,9 @@ data DomainRecord = DomainRecord { recordId       :: Id
                                  , recordType     :: DNSType
                                  , recordName     :: String
                                  , recordData     :: String
-                                 , recordPriority :: Maybe Double
+                                 , recordPriority :: Maybe Int
                                  , recordPort     :: Maybe Int
-                                 , recordWeight   :: Maybe Double
+                                 , recordWeight   :: Maybe Int
                                  } deriving (Show)
 
 
@@ -521,8 +521,49 @@ instance ToJSON DomainRecord where
                                    , "weight" .= recordWeight
                                    ]
 
-failParse :: (Show a1, Monad m) => a1 -> m a
-failParse e = fail $ "cannot parse " <> show e
+parseRecord :: String -> Result DomainRecord
+parseRecord s =
+  case P.parse recordParser "" s of
+    Left e  -> Left (Error $ show e)
+    Right r -> Right r
+  where
+    recordParser :: P.Parsec String s DomainRecord
+    recordParser = do
+      t <- typeParser
+      P.spaces
+      n <- nameParser
+      P.spaces
+      d <- dataParser
+      (prio, port, wei) <- recordAttributes t
+      return $ DomainRecord 0 t n d prio port wei
+
+    typeParser :: P.Parsec String s DNSType
+    typeParser = P.choice [ rtype A , rtype CNAME , rtype TXT , rtype PTR , rtype SRV , rtype NS , rtype AAAA , rtype MX ]
+
+    rtype :: DNSType -> P.Parsec String s DNSType
+    rtype t = P.string (show t) >> return t
+
+    nameParser :: P.Parsec String s String
+    nameParser = P.many1 (P.lower P.<|> P.char '.')
+
+    dataParser :: P.Parsec String s String
+    dataParser = P.many1 (P.alphaNum P.<|> P.oneOf [ '.' ])
+
+    recordAttributes :: DNSType -> P.Parsec String s (Maybe Int, Maybe Int, Maybe Int)
+    recordAttributes SRV =  (,,) <$>
+                            (Just <$> number) <*>
+                            (Just <$> number) <*>
+                            (Just <$> number)
+    recordAttributes MX  =  (,,) <$>
+                            (Just <$> number) <*>
+                            pure Nothing <*>
+                            pure Nothing
+    recordAttributes _   = (,,) <$>
+                           pure Nothing <*>
+                           pure Nothing <*>
+                           pure Nothing
+    number :: P.Parsec String s Int
+    number = P.spaces >> read <$> P.many1 P.digit
 
 -- | Floating IPs
 -- https://developers.digitalocean.com/documentation/v2/#floating-ips
@@ -567,4 +608,8 @@ instance FromJSON IPActionType where
                           "assign_ip" -> return Assign
                           "unassign_ip"  -> return Unassign
                           _           -> fail $ "unknown action type " ++ show s
-  parseJSON v          = fail $ "cannot parse action type " ++ show v
+  parseJSON v          = failParse v
+
+
+failParse :: (Show a1, Monad m) => a1 -> m a
+failParse e = fail $ "cannot parse " <> show e

@@ -122,4 +122,10 @@ parseCommandOptions ("ips":ip:"unassign": [])  = unassignFloatingIP (P.read ip) 
 parseCommandOptions ("dns":"list":_)             = listDomains >>= outputResult
 parseCommandOptions ("dns":"create":name:ip:[])  = createDomain (P.read name) (P.read ip) >>= outputResult
 parseCommandOptions ("dns":"delete":name:[])     = deleteDomain (P.read name) >>= outputResult
+parseCommandOptions ("dns":name:"list":_)        = listRecords (P.read name) >>= outputResult
+parseCommandOptions ("dns":name:"create":rest)   =
+  case (parseRecord $ unwords rest) of
+    Left (Error e) -> fail e
+    Right r        -> createRecord (P.read name) r >>= outputResult
+parseCommandOptions ("dns":name:"delete":rid:[]) = deleteRecord (P.read name) (P.read rid) >>= outputResult
 parseCommandOptions e                          = fail $ "I don't know how to interpret commands " ++ unwords e ++ "\n" ++ usage
