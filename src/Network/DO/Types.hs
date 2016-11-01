@@ -376,17 +376,17 @@ instance FromJSON Size where
 -- | Type of action status
 -- This is returned when action is initiated or when status of some action is requested
 
-data ActionResult = ActionResult { actionId           :: Id
-                                 , actionStatus       :: ActionStatus
-                                 , actionType         :: ActionType
-                                 , actionStartedAt    :: Maybe Date
-                                 , actionCompletedAt  :: Maybe Date
-                                 , actionResourceId   :: Id
-                                 , actionResourceType :: String
-                                 , actionRegionSlug   :: Region
-                                 } deriving (Show)
+data ActionResult result = ActionResult { actionId           :: Id
+                                        , actionStatus       :: ActionStatus
+                                        , actionType         :: result
+                                        , actionStartedAt    :: Maybe Date
+                                        , actionCompletedAt  :: Maybe Date
+                                        , actionResourceId   :: Id
+                                        , actionResourceType :: String
+                                        , actionRegionSlug   :: Region
+                                        } deriving (Show)
 
-instance FromJSON ActionResult where
+instance (FromJSON r) => FromJSON (ActionResult r) where
   parseJSON (Object o) = ActionResult
                          <$> o .: "id"
                          <*> o .: "status"
@@ -411,12 +411,12 @@ instance FromJSON ActionStatus where
                           _             -> fail $ "unknown action status " ++ show s
   parseJSON v          = fail $ "cannot parse action status " ++ show v
 
-data ActionType = PowerOff
+data DropletActionType = PowerOff
                 | PowerOn
                 | MakeSnapshot
                 deriving (Show)
 
-instance FromJSON ActionType where
+instance FromJSON DropletActionType where
   parseJSON (String s) = case s of
                           "power_off" -> return PowerOff
                           "power_on"  -> return PowerOn
@@ -424,7 +424,7 @@ instance FromJSON ActionType where
                           _           -> fail $ "unknown action type " ++ show s
   parseJSON v          = fail $ "cannot parse action type " ++ show v
 
-instance ToJSON ActionType where
+instance ToJSON DropletActionType where
   toJSON PowerOff = String "power_off"
   toJSON PowerOn  = String "power_on"
   toJSON MakeSnapshot = String "snapshot"
@@ -515,3 +515,24 @@ data FloatingIPTarget = TargetRegion Slug
 instance ToJSON FloatingIPTarget where
   toJSON (TargetRegion r)  = object [ "region" .= r ]
   toJSON (TargetDroplet i) = object [ "droplet_id" .= i ]
+
+data IPAction = AssignIP Id
+              | UnassignIP
+  deriving (Show, Read)
+
+instance ToJSON IPAction where
+  toJSON (AssignIP did) = object [ "type" .= ("assign" :: String)
+                               , "droplet_id" .= did
+                               ]
+  toJSON UnassignIP     = object [ "type" .= ("unassign" :: String)]
+
+data IPActionType = Assign
+                  | Unassign
+                deriving (Show)
+
+instance FromJSON IPActionType where
+  parseJSON (String s) = case s of
+                          "assign_ip" -> return Assign
+                          "unassign_ip"  -> return Unassign
+                          _           -> fail $ "unknown action type " ++ show s
+  parseJSON v          = fail $ "cannot parse action type " ++ show v

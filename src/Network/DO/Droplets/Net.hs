@@ -13,8 +13,6 @@ import           Control.Comonad.Env.Class    (ComonadEnv, ask)
 import           Control.Exception            (IOException)
 import           Control.Monad.Trans          (MonadIO)
 import           Data.Aeson                   as A hiding (Result)
-import qualified Data.Aeson.Types             as A
-import qualified Data.HashMap.Strict          as H
 import           Data.Maybe
 import           Data.Monoid                  ((<>))
 import           Data.Proxy
@@ -63,21 +61,17 @@ doDestroyDroplet w dropletId = maybe (return $ Just "no authentication token def
                                        in (r, w))
                                (authToken (ask w))
 
-actionResult :: Either String Value -> Result ActionResult
-actionResult (Right (Object r)) = either error (Right . id) $ A.parseEither parseJSON (r H.! "action")
-actionResult e                  = error $ "cannot extract action result from " ++ show e
-
-doAction :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> Id -> Action -> (RESTT m (Result ActionResult), w a)
+doAction :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> Id -> Action -> (RESTT m (Result (ActionResult DropletActionType)), w a)
 doAction w dropletId action = maybe (return $ error "no authentication token defined", w)
                               (\ t -> let r = postJSONWith (authorisation t) (toURI $ dropletsEndpoint </> show dropletId </> "actions") (toJSON action)
-                                              >>= return . actionResult
+                                              >>= return . fromResponse "action"
                                       in (r, w))
                               (authToken (ask w))
 
-doGetAction :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> Id -> Id -> (RESTT m (Result ActionResult), w a)
+doGetAction :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> Id -> Id -> (RESTT m (Result (ActionResult DropletActionType)), w a)
 doGetAction w dropletId actionId = maybe (return $ error "no authentication token defined", w)
                                    (\ t -> let r = getJSONWith (authorisation t) (toURI $ dropletsEndpoint </> show dropletId </> "actions" </> show actionId)
-                                                   >>= return . actionResult . Right
+                                                   >>= return . fromResponse "action" . Right
                                            in (r, w))
                                    (authToken (ask w))
 

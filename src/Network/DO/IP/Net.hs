@@ -10,14 +10,10 @@ module Network.DO.IP.Net(ipCommandsInterpreter) where
 
 import           Control.Applicative
 import           Control.Comonad.Env.Class (ComonadEnv, ask)
-import           Control.Exception         (IOException)
 import           Control.Monad.Trans       (MonadIO)
 import           Data.Aeson                as A hiding (Result)
-import qualified Data.Aeson.Types          as A
-import qualified Data.HashMap.Strict       as H
 import           Data.IP
 import           Data.Maybe
-import           Data.Monoid               ((<>))
 import           Data.Proxy
 import           Network.DO.IP.Commands
 import           Network.DO.Net.Common
@@ -50,9 +46,17 @@ doDeleteIP w ip = maybe (return $ Just "no authentication token defined", w)
                           in (r, w))
                   (authToken (ask w))
 
+doAction :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> IP -> IPAction -> (RESTT m (Result (ActionResult IPActionType)), w a)
+doAction w ip action = maybe (return $ error "no authentication token defined", w)
+                       (\ t -> let r = postJSONWith (authorisation t) (toURI $ floatingIpsEndpoint </> show ip </> "actions") (toJSON action)
+                                       >>= return . fromResponse "action"
+                               in (r, w))
+                       (authToken (ask w))
+
 ipCommandsInterpreter :: (MonadIO m, ComonadEnv ToolConfiguration w) => w a -> CoIPCommands (RESTT m) (w a)
 ipCommandsInterpreter = CoIPCommands
                         <$> queryList (Proxy :: Proxy FloatingIP)
                         <*> doCreateIP
                         <*> doDeleteIP
+                        <*> doAction
 

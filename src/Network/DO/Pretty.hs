@@ -81,9 +81,11 @@ instance Pretty Size where
                     nest 5 (pretty szPrice_Hourly <> text "$/h, " <> pretty szPrice_Monthly <> text "$/mo" ) $$
                     nest 5 (hcat $ punctuate (char ',') $ map pretty szRegions)
 
-instance Pretty ActionResult where
+instance (Pretty r) => Pretty (ActionResult r) where
   pretty ActionResult{..} = brackets (integer actionId) <+> pretty actionStartedAt <+> text "->" <+> pretty actionCompletedAt $$
-                            (nest 5 $ integer actionResourceId <+> text (show actionType) <> char ':' <+> text (show actionStatus))
+                            (nest 5 $ integer actionResourceId <+> pretty actionType <> char ':' <+> text (show actionStatus))
+
+instance Pretty DropletActionType
 
 instance Pretty FloatingIP where
   pretty FloatingIP{..} =
@@ -92,6 +94,8 @@ instance Pretty FloatingIP where
       Just d  -> ipAndRegion <+> integer (dropletId d) <> char '/' <> text (name d)
     where
       ipAndRegion = pretty floatingIp <> text "/" <>  text (regionSlug floatingRegion) <+> text "->"
+
+instance Pretty IPActionType
 
 outputResult :: (Pretty a, MonadIO m) => a -> m  ()
 outputResult = liftIO . putStrLn . render . pretty

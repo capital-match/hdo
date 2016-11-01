@@ -10,7 +10,7 @@ module Network.DO(
   listDroplets, createDroplet, showDroplet, destroyDroplet,
   dropletAction, dropletConsole, getAction, listDropletSnapshots,
   -- * Floating IPs Commands
-  listFloatingIPs, createFloatingIP, deleteFloatingIP,
+  listFloatingIPs, createFloatingIP, deleteFloatingIP, assignFloatingIP, unassignFloatingIP,
   -- * Utilities
   runDOEnv, getAuthFromEnv, outputResult,
   generateName,
@@ -55,6 +55,12 @@ createFloatingIP = injrr . C.createFloatingIP
 deleteFloatingIP :: (Monad w) => IP -> Command w (Maybe String)
 deleteFloatingIP = injrr . C.deleteFloatingIP
 
+assignFloatingIP :: (Monad w) => IP -> Id -> Command w (Result (ActionResult IPActionType))
+assignFloatingIP ip did = injrr $ C.floatingIPAction ip (AssignIP did)
+
+unassignFloatingIP :: (Monad w) => IP -> Command w (Result (ActionResult IPActionType))
+unassignFloatingIP ip = injrr $ C.floatingIPAction ip UnassignIP
+
 listDroplets :: (Monad w) => Command w [Droplet]
 listDroplets = injrl C.listDroplets
 
@@ -67,13 +73,13 @@ showDroplet = injrl . C.showDroplet
 destroyDroplet :: (Monad w) => Integer -> Command w (Maybe String)
 destroyDroplet = injrl . C.destroyDroplet
 
-dropletAction :: (Monad w) => Id -> Action -> Command w (Result ActionResult)
+dropletAction :: (Monad w) => Id -> Action -> Command w (Result (ActionResult DropletActionType))
 dropletAction did = injrl . C.dropletAction did
 
 dropletConsole :: (Monad w) => Droplet -> Command w (Result ())
 dropletConsole = injrl . C.dropletConsole
 
-getAction :: (Monad w) => Id -> Id -> Command w (Result ActionResult)
+getAction :: (Monad w) => Id -> Id -> Command w (Result (ActionResult DropletActionType))
 getAction  did = injrl . C.getAction did
 
 listDropletSnapshots :: (Monad w) => Id -> Command w [Image]
