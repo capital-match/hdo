@@ -10,7 +10,7 @@ module Network.DO(
   listDroplets, createDroplet, showDroplet, destroyDroplet,
   dropletAction, dropletConsole, getAction, listDropletSnapshots,
   -- * Floating IPs Commands
-  listFloatingIPs, createFloatingIP,
+  listFloatingIPs, createFloatingIP, deleteFloatingIP,
   -- * Utilities
   runDOEnv, getAuthFromEnv, outputResult,
   generateName,
@@ -18,6 +18,7 @@ module Network.DO(
 
 import           Control.Exception            (catch, throw)
 import           Control.Monad.Trans.Free
+import           Data.IP
 import qualified Network.DO.Commands          as C
 import qualified Network.DO.Droplets.Commands as C
 import           Network.DO.Droplets.Utils
@@ -50,6 +51,9 @@ listFloatingIPs = injrr C.listFloatingIPs
 
 createFloatingIP :: (Monad w) => FloatingIPTarget -> Command w (Result FloatingIP)
 createFloatingIP = injrr . C.createFloatingIP
+
+deleteFloatingIP :: (Monad w) => IP -> Command w (Maybe String)
+deleteFloatingIP = injrr . C.deleteFloatingIP
 
 listDroplets :: (Monad w) => Command w [Droplet]
 listDroplets = injrl C.listDroplets

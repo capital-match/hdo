@@ -91,7 +91,7 @@ instance Pretty FloatingIP where
       Nothing -> ipAndRegion <+> text "?"
       Just d  -> ipAndRegion <+> integer (dropletId d) <> char '/' <> text (name d)
     where
-      ipAndRegion = text floatingIp <> text "/" <>  text (regionSlug floatingRegion) <+> text "->"
+      ipAndRegion = pretty floatingIp <> text "/" <>  text (regionSlug floatingRegion) <+> text "->"
 
 outputResult :: (Pretty a, MonadIO m) => a -> m  ()
 outputResult = liftIO . putStrLn . render . pretty

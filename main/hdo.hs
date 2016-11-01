@@ -116,4 +116,5 @@ parseCommandOptions ("ips":"create":dropletOrRegion:[])     = do
   outputResult =<< if dropletOrRegion `elem` map regionSlug regions
     then createFloatingIP (TargetRegion dropletOrRegion)
     else createFloatingIP (TargetDroplet $ read dropletOrRegion)
+parseCommandOptions ("ips":"delete":ip:[])     = deleteFloatingIP (P.read ip) >>= outputResult
 parseCommandOptions e                                    = fail $ "I don't know how to interpret commands " ++ unwords e ++ "\n" ++ usage

@@ -15,6 +15,7 @@ import           Control.Monad.Trans       (MonadIO)
 import           Data.Aeson                as A hiding (Result)
 import qualified Data.Aeson.Types          as A
 import qualified Data.HashMap.Strict       as H
+import           Data.IP
 import           Data.Maybe
 import           Data.Monoid               ((<>))
 import           Data.Proxy
@@ -43,8 +44,15 @@ doCreateIP w config = maybe (return $ error "no authentication token defined", w
                      ip               = postJSONWith opts (toURI floatingIpsEndpoint) (toJSON config) >>= return . fromResponse "floating_ip"
                  in (ip, w)
 
+doDeleteIP :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> IP -> (RESTT m (Maybe String), w a)
+doDeleteIP w ip = maybe (return $ Just "no authentication token defined", w)
+                  (\ t -> let r = deleteJSONWith (authorisation t) (toURI $ floatingIpsEndpoint </> show ip) >> return Nothing
+                          in (r, w))
+                  (authToken (ask w))
+
 ipCommandsInterpreter :: (MonadIO m, ComonadEnv ToolConfiguration w) => w a -> CoIPCommands (RESTT m) (w a)
 ipCommandsInterpreter = CoIPCommands
                         <$> queryList (Proxy :: Proxy FloatingIP)
                         <*> doCreateIP
+                        <*> doDeleteIP
 

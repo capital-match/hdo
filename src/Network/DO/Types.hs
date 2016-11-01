@@ -495,7 +495,7 @@ failParse e = fail $ "cannot parse " <> show e
 -- | Floating IPs
 -- https://developers.digitalocean.com/documentation/v2/#floating-ips
 
-data FloatingIP = FloatingIP { floatingIp      :: String
+data FloatingIP = FloatingIP { floatingIp      :: IP
                              , floatingDroplet :: Maybe Droplet
                              , floatingRegion  :: Region
                              } deriving (Show)
@@ -515,4 +515,3 @@ data FloatingIPTarget = TargetRegion Slug
 instance ToJSON FloatingIPTarget where
   toJSON (TargetRegion r)  = object [ "region" .= r ]
   toJSON (TargetDroplet i) = object [ "droplet_id" .= i ]
-
