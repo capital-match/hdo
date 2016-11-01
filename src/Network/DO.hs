@@ -15,7 +15,7 @@ module Network.DO(
   listDomains, createDomain, deleteDomain,
   listRecords, createRecord, deleteRecord,
   -- * Utilities
-  runDOEnv, getAuthFromEnv, outputResult,
+  runDOEnv, runDO, getAuthFromEnv, outputResult,
   generateName,
   module Network.DO.Droplets.Utils) where
 
@@ -107,11 +107,13 @@ getAction  did = injrl . C.getAction did
 listDropletSnapshots :: (Monad w) => Id -> Command w [Image]
 listDropletSnapshots = injrl . C.listDropletSnapshots
 
--- | Run DO actions, extracting authentication token from environment variable `AUTH_TOKEN`
+-- | Run DO actions, extracting authentication token from environment variable `AUTH_TOKEN`.
 runDOEnv :: Command IO a -> IO a
-runDOEnv actions = do
-  token <- getAuthFromEnv
-  runWreq $ pairEffectM (\ _ b -> return b) (mkDOClient $ Tool Nothing token False) actions
+runDOEnv actions = getAuthFromEnv >>= runDO actions
+
+-- | Run DO actions, passing a built authentication token.
+runDO :: Command IO a -> Maybe AuthToken -> IO a
+runDO actions token =runWreq $ pairEffectM (\ _ b -> return b) (mkDOClient $ Tool Nothing token False) actions
 
 getAuthFromEnv :: IO (Maybe AuthToken)
 getAuthFromEnv = (Just `fmap` getEnv "AUTH_TOKEN") `catch` (\ (e :: IOError) -> if isDoesNotExistError e then return Nothing else throw e)
