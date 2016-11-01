@@ -49,11 +49,35 @@ doDeleteDomain w name = maybe (return $ Just "no authentication token defined", 
                           in (r, w))
                   (authToken (ask w))
 
+doListRecords :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> DomainName -> (RESTT m [DomainRecord], w a)
+doListRecords w name = maybe (return [], w)
+                       (\ t -> let records = toList "domain_records" <$> getJSONWith (authorisation t) (toURI $ domainsEndpoint </> show name)
+                         in (records, w))
+                       (authToken (ask w))
+
+doCreateRecord :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> DomainName -> DomainRecord -> (RESTT m (Result DomainRecord), w a)
+doCreateRecord w name record =
+  maybe (return $ error "no authentication token defined", w)
+  runQuery
+  (authToken (ask w))
+  where
+    runQuery t = let opts   = authorisation t
+                     domain = postJSONWith opts (toURI $ domainsEndpoint </> show name) (toJSON record) >>= return . fromResponse "domain_record"
+                 in (domain, w)
+
+doDeleteRecord :: (ComonadEnv ToolConfiguration w, Monad m) => w a -> DomainName -> Id -> (RESTT m (Maybe String), w a)
+doDeleteRecord w name rid =
+  maybe (return $ Just "no authentication token defined", w)
+  (\ t -> let r = deleteJSONWith (authorisation t) (toURI $ domainsEndpoint </> show name </> "records" </> show rid ) >> return Nothing
+          in (r, w))
+  (authToken (ask w))
 
 dnsCommandsInterpreter :: (MonadIO m, ComonadEnv ToolConfiguration w) => w a -> CoDomainCommands (RESTT m) (w a)
 dnsCommandsInterpreter = CoDomainCommands
                         <$> queryList (Proxy :: Proxy Domain)
                         <*> doCreateDomain
                         <*> doDeleteDomain
-
+                        <*> doListRecords
+                        <*> doCreateRecord
+                        <*> doDeleteRecord
 

@@ -512,6 +512,15 @@ instance FromJSON DomainRecord where
 
   parseJSON e          = failParse e
 
+instance ToJSON DomainRecord where
+  toJSON DomainRecord{..} = object [ "type" .= recordType
+                                   , "name" .= recordName
+                                   , "data" .= recordData
+                                   , "priority" .= recordPriority
+                                   , "port" .= recordPort
+                                   , "weight" .= recordWeight
+                                   ]
+
 failParse :: (Show a1, Monad m) => a1 -> m a
 failParse e = fail $ "cannot parse " <> show e
 

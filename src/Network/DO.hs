@@ -13,6 +13,7 @@ module Network.DO(
   listFloatingIPs, createFloatingIP, deleteFloatingIP, assignFloatingIP, unassignFloatingIP,
   -- * Domains Commands
   listDomains, createDomain, deleteDomain,
+  listRecords, createRecord, deleteRecord,
   -- * Utilities
   runDOEnv, getAuthFromEnv, outputResult,
   generateName,
@@ -68,10 +69,19 @@ listDomains :: (Monad w) => Command w [Domain]
 listDomains = injrrr C.listDomains
 
 createDomain :: (Monad w) => DomainName -> IP -> Command w (Result Domain)
-createDomain name ip = injrrr $ C.createDomain name ip
+createDomain dname ip = injrrr $ C.createDomain dname ip
 
 deleteDomain :: (Monad w) => DomainName -> Command w (Maybe String)
 deleteDomain = injrrr . C.deleteDomain
+
+listRecords :: (Monad w) => DomainName -> Command w [DomainRecord]
+listRecords = injrrr . C.listRecords
+
+createRecord :: (Monad w) => DomainName -> DomainRecord -> Command w (Result DomainRecord)
+createRecord dname ip = injrrr $ C.createRecord dname ip
+
+deleteRecord :: (Monad w) => DomainName -> Id -> Command w (Maybe String)
+deleteRecord dname rid = injrrr $ C.deleteRecord dname rid
 
 listDroplets :: (Monad w) => Command w [Droplet]
 listDroplets = injrl C.listDroplets
