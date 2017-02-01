@@ -33,9 +33,9 @@ listRegions :: DO [Region]
 listRegions = ListRegions P.id
 
 -- dual type, for creating interpreters
-data CoDO m k = CoDO { listKeysH   :: (m [Key], k)
-                     , listSizesH  :: (m [Size], k)
-                     , listImagesH :: (m [Image], k)
+data CoDO m k = CoDO { listKeysH    :: (m [Key], k)
+                     , listSizesH   :: (m [Size], k)
+                     , listImagesH  :: (m [Image], k)
                      , listRegionsH :: (m [Region], k)
                      } deriving Functor
 
@@ -44,7 +44,7 @@ type CoDOT m = CofreeT (CoDO m)
 
 -- pair DSL with interpreter within some monadic context
 instance (Monad m) => PairingM (CoDO m) DO m where
-  pairM f (CoDO ks _  _ _)  (ListKeys k)   = pairM f ks k
-  pairM f (CoDO _ szs _ _)  (ListSizes k)  = pairM f szs k
-  pairM f (CoDO _ _ imgs _)  (ListImages k) = pairM f imgs k
-  pairM f (CoDO _ _ _ rgns)  (ListRegions k) = pairM f rgns k
+  pairM f (CoDO ks _  _ _ )  (ListKeys k)   = pairM f ks k
+  pairM f (CoDO _ szs _ _ )  (ListSizes k)  = pairM f szs k
+  pairM f (CoDO _ _ imgs _ )  (ListImages k) = pairM f imgs k
+  pairM f (CoDO _ _ _ rgns )  (ListRegions k) = pairM f rgns k

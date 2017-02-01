@@ -17,10 +17,10 @@ import qualified Data.HashMap.Lazy as H
 import           Data.IP
 import           Data.List         (elemIndex)
 import           Data.Monoid       ((<>))
-import           Data.Text         (unpack)
+import           Data.Text         (pack, unpack)
 import           Data.Time         (UTCTime)
 import           GHC.Generics
-
+import qualified Text.Parsec       as P
 
 type AuthToken = String
 
@@ -73,7 +73,6 @@ instance Show Region where
                         ", regionAvailable = " <> show regionAvailable <>
                         "}"
 
-
 instance FromJSON Region where
   parseJSON (String s) = return $ RegionSlug (unpack s)
   parseJSON (Object o) = if H.null o
@@ -84,7 +83,6 @@ instance FromJSON Region where
                               <*> o .: "sizes"
                               <*> o .: "available"
   parseJSON e          = failParse e
-
 
 -- | String representation of size slugs
 -- This maps to corresponding expected JSON string value.
@@ -200,6 +198,9 @@ data Network a = NetworkV4 { ip_address :: IP
 instance FromJSON IP where
   parseJSON (String s) = return $ read $ unpack s
   parseJSON e          = fail $ "cannot parse IP " <> show e
+
+instance ToJSON IP where
+  toJSON = String . pack . show
 
 instance FromJSON NetType where
   parseJSON (String s) = case s of
@@ -370,23 +371,22 @@ instance FromJSON Size where
 
   parseJSON e          = failParse e
 
-
 -- * Droplets Actions
 
 -- | Type of action status
 -- This is returned when action is initiated or when status of some action is requested
 
-data ActionResult = ActionResult { actionId           :: Id
-                                 , actionStatus       :: ActionStatus
-                                 , actionType         :: ActionType
-                                 , actionStartedAt    :: Maybe Date
-                                 , actionCompletedAt  :: Maybe Date
-                                 , actionResourceId   :: Id
-                                 , actionResourceType :: String
-                                 , actionRegionSlug   :: Region
-                                 } deriving (Show)
+data ActionResult result = ActionResult { actionId           :: Id
+                                        , actionStatus       :: ActionStatus
+                                        , actionType         :: result
+                                        , actionStartedAt    :: Maybe Date
+                                        , actionCompletedAt  :: Maybe Date
+                                        , actionResourceId   :: Id
+                                        , actionResourceType :: String
+                                        , actionRegionSlug   :: Region
+                                        } deriving (Show)
 
-instance FromJSON ActionResult where
+instance (FromJSON r) => FromJSON (ActionResult r) where
   parseJSON (Object o) = ActionResult
                          <$> o .: "id"
                          <*> o .: "status"
@@ -411,12 +411,12 @@ instance FromJSON ActionStatus where
                           _             -> fail $ "unknown action status " ++ show s
   parseJSON v          = fail $ "cannot parse action status " ++ show v
 
-data ActionType = PowerOff
+data DropletActionType = PowerOff
                 | PowerOn
                 | MakeSnapshot
                 deriving (Show)
 
-instance FromJSON ActionType where
+instance FromJSON DropletActionType where
   parseJSON (String s) = case s of
                           "power_off" -> return PowerOff
                           "power_on"  -> return PowerOn
@@ -424,7 +424,7 @@ instance FromJSON ActionType where
                           _           -> fail $ "unknown action type " ++ show s
   parseJSON v          = fail $ "cannot parse action type " ++ show v
 
-instance ToJSON ActionType where
+instance ToJSON DropletActionType where
   toJSON PowerOff = String "power_off"
   toJSON PowerOn  = String "power_on"
   toJSON MakeSnapshot = String "snapshot"
@@ -444,9 +444,25 @@ instance ToJSON Action where
 -- |Type of Domain zones
 --
 -- https://developers.digitalocean.com/documentation/v2/#domains
-data Domain = Domain { domainName :: String
-                     , domainTTL  :: Int
-                     , zone_file  :: String
+
+newtype DomainName = DomainName { domain :: String }
+
+instance Show DomainName where
+  show = domain
+
+instance Read DomainName where
+  readsPrec _ s = [(DomainName s,[])]
+
+instance FromJSON DomainName where
+  parseJSON (String s) = pure $ DomainName $ unpack s
+  parseJSON e          = failParse e
+
+instance ToJSON DomainName where
+  toJSON (DomainName n) = String (pack n)
+
+data Domain = Domain { domainName :: DomainName
+                     , domainTTL  :: Maybe Int
+                     , zone_file  :: Maybe String
                      } deriving (Show)
 
 instance FromJSON Domain where
@@ -456,6 +472,13 @@ instance FromJSON Domain where
                          <*> o .: "zone_file"
 
   parseJSON e          = failParse e
+
+data DomainConfig = DomainConfig DomainName IP
+
+instance ToJSON DomainConfig where
+  toJSON (DomainConfig name ip) = object [ "name" .= name
+                                         , "ip_address" .= ip
+                                         ]
 
 -- | Enumeration of possible DNS records types
 data DNSType = A | CNAME | TXT | PTR | SRV | NS | AAAA | MX
@@ -471,9 +494,9 @@ data DomainRecord = DomainRecord { recordId       :: Id
                                  , recordType     :: DNSType
                                  , recordName     :: String
                                  , recordData     :: String
-                                 , recordPriority :: Maybe Double
+                                 , recordPriority :: Maybe Int
                                  , recordPort     :: Maybe Int
-                                 , recordWeight   :: Maybe Double
+                                 , recordWeight   :: Maybe Int
                                  } deriving (Show)
 
 
@@ -488,6 +511,105 @@ instance FromJSON DomainRecord where
                          <*> o .: "weight"
 
   parseJSON e          = failParse e
+
+instance ToJSON DomainRecord where
+  toJSON DomainRecord{..} = object [ "type" .= recordType
+                                   , "name" .= recordName
+                                   , "data" .= recordData
+                                   , "priority" .= recordPriority
+                                   , "port" .= recordPort
+                                   , "weight" .= recordWeight
+                                   ]
+
+parseRecord :: String -> Result DomainRecord
+parseRecord s =
+  case P.parse recordParser "" s of
+    Left e  -> Left (Error $ show e)
+    Right r -> Right r
+  where
+    recordParser :: P.Parsec String s DomainRecord
+    recordParser = do
+      t <- typeParser
+      P.spaces
+      n <- nameParser
+      P.spaces
+      d <- dataParser
+      (prio, port, wei) <- recordAttributes t
+      return $ DomainRecord 0 t n d prio port wei
+
+    typeParser :: P.Parsec String s DNSType
+    typeParser = P.choice [ rtype A , rtype CNAME , rtype TXT , rtype PTR , rtype SRV , rtype NS , rtype AAAA , rtype MX ]
+
+    rtype :: DNSType -> P.Parsec String s DNSType
+    rtype t = P.string (show t) >> return t
+
+    nameParser :: P.Parsec String s String
+    nameParser = P.many1 (P.lower P.<|> P.char '.')
+
+    dataParser :: P.Parsec String s String
+    dataParser = P.many1 (P.alphaNum P.<|> P.oneOf [ '.' ])
+
+    recordAttributes :: DNSType -> P.Parsec String s (Maybe Int, Maybe Int, Maybe Int)
+    recordAttributes SRV =  (,,) <$>
+                            (Just <$> number) <*>
+                            (Just <$> number) <*>
+                            (Just <$> number)
+    recordAttributes MX  =  (,,) <$>
+                            (Just <$> number) <*>
+                            pure Nothing <*>
+                            pure Nothing
+    recordAttributes _   = (,,) <$>
+                           pure Nothing <*>
+                           pure Nothing <*>
+                           pure Nothing
+    number :: P.Parsec String s Int
+    number = P.spaces >> read <$> P.many1 P.digit
+
+-- | Floating IPs
+-- https://developers.digitalocean.com/documentation/v2/#floating-ips
+
+data FloatingIP = FloatingIP { floatingIp      :: IP
+                             , floatingDroplet :: Maybe Droplet
+                             , floatingRegion  :: Region
+                             } deriving (Show)
+
+instance FromJSON FloatingIP where
+  parseJSON (Object o) = FloatingIP
+                         <$> o .: "ip"
+                         <*> o .:? "droplet"
+                         <*> o .: "region"
+
+  parseJSON e          = failParse e
+
+data FloatingIPTarget = TargetRegion Slug
+                      | TargetDroplet Id
+                        deriving (Show)
+
+instance ToJSON FloatingIPTarget where
+  toJSON (TargetRegion r)  = object [ "region" .= r ]
+  toJSON (TargetDroplet i) = object [ "droplet_id" .= i ]
+
+data IPAction = AssignIP Id
+              | UnassignIP
+  deriving (Show, Read)
+
+instance ToJSON IPAction where
+  toJSON (AssignIP did) = object [ "type" .= ("assign" :: String)
+                                 , "droplet_id" .= did
+                                 ]
+  toJSON UnassignIP     = object [ "type" .= ("unassign" :: String)]
+
+data IPActionType = Assign
+                  | Unassign
+                deriving (Show)
+
+instance FromJSON IPActionType where
+  parseJSON (String s) = case s of
+                          "assign_ip" -> return Assign
+                          "unassign_ip"  -> return Unassign
+                          _           -> fail $ "unknown action type " ++ show s
+  parseJSON v          = failParse v
+
 
 failParse :: (Show a1, Monad m) => a1 -> m a
 failParse e = fail $ "cannot parse " <> show e

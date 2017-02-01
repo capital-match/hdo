@@ -18,8 +18,8 @@ import           Prelude                      as P
 data DropletCommands a = ListDroplets ([Droplet] -> a)
                        | CreateDroplet BoxConfiguration (Result Droplet -> a)
                        | DestroyDroplet Id (Maybe String -> a)
-                       | DropletAction Id Action (Result ActionResult -> a)
-                       | GetAction Id Id (Result ActionResult -> a)
+                       | DropletAction Id Action (Result (ActionResult DropletActionType) -> a)
+                       | GetAction Id Id (Result (ActionResult DropletActionType) -> a)
                        | ListSnapshots Id ([Image] -> a)
                        | Console Droplet (Result () -> a)
                        | ShowDroplet Id (Result Droplet -> a)
@@ -41,13 +41,13 @@ showDroplet did = ShowDroplet did P.id
 destroyDroplet :: Id -> DropletCommands (Maybe String)
 destroyDroplet did = DestroyDroplet did P.id
 
-dropletAction :: Id -> Action -> DropletCommands (Result ActionResult)
+dropletAction :: Id -> Action -> DropletCommands (Result (ActionResult DropletActionType))
 dropletAction did action = DropletAction did action P.id
 
 dropletConsole :: Droplet -> DropletCommands (Result ())
 dropletConsole droplet = Console droplet P.id
 
-getAction :: Id -> Id -> DropletCommands (Result ActionResult)
+getAction :: Id -> Id -> DropletCommands (Result (ActionResult DropletActionType))
 getAction did actId = GetAction did actId P.id
 
 listDropletSnapshots :: Id -> DropletCommands [Image]
@@ -58,8 +58,8 @@ listDropletSnapshots did = ListSnapshots did P.id
 data CoDropletCommands m k = CoDropletCommands { listDropletsH   :: (m [Droplet], k)
                                                , createDropletH  :: BoxConfiguration -> (m (Result Droplet), k)
                                                , destroyDropletH :: Id -> (m (Maybe String), k)
-                                               , actionDropletH  :: Id -> Action -> (m (Result ActionResult), k)
-                                               , getActionH      :: Id -> Id -> (m (Result ActionResult), k)
+                                               , actionDropletH  :: Id -> Action -> (m (Result (ActionResult DropletActionType)), k)
+                                               , getActionH      :: Id -> Id -> (m (Result (ActionResult DropletActionType)), k)
                                                , listSnapshotsH  :: Id -> (m [Image], k)
                                                , consoleH        :: Droplet -> (m (Result ()), k)
                                                , showDropletH    :: Id -> (m (Result Droplet), k)

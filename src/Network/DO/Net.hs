@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeOperators         #-}
 
 -- | Interpreter for accessing DO API through the web using [wreq http://www.serpentine.com/wreq].
 module Network.DO.Net(mkDOClient) where
@@ -18,9 +19,12 @@ import           Data.Proxy
 import           Prelude                      as P
 
 import           Network.DO.Commands
+import           Network.DO.Domain
 import           Network.DO.Droplets.Commands
 import           Network.DO.Droplets.Net
+import           Network.DO.IP
 import           Network.DO.Net.Common
+import           Network.DO.Pairing
 import           Network.DO.Types             as DO hiding (URI)
 import           Network.REST
 
@@ -74,10 +78,17 @@ genericCommands = CoDO
                   <*> queryList (Proxy :: Proxy Image)
                   <*> queryList (Proxy :: Proxy Region)
 
-mkDOClient :: (MonadIO m) => ToolConfiguration -> CofreeT (Product (CoDO (RESTT m)) (CoDropletCommands (RESTT m))) (Env ToolConfiguration) (RESTT m ())
+mkDOClient :: (MonadIO m) => ToolConfiguration
+           -> CofreeT (CoDO (RESTT m) :*: CoDropletCommands (RESTT m) :*: CoIPCommands (RESTT m) :*: CoDomainCommands (RESTT m)) (Env ToolConfiguration) (RESTT m ())
 mkDOClient config = coiterT next start
   where
     next = Pair
            <$> genericCommands
-           <*> dropletCommandsInterpreter
+           <*> (Pair
+                 <$> dropletCommandsInterpreter
+                 <*> (Pair
+                      <$> ipCommandsInterpreter
+                      <*> dnsCommandsInterpreter
+                     )
+               )
     start = env config (return ())

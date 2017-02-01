@@ -106,4 +106,22 @@ parseCommandOptions ("images":"list":_)                  = listImages >>= output
 parseCommandOptions ("regions":"list":_)                 = listRegions >>= outputResult
 parseCommandOptions ("keys":"list":_)                    = listKeys >>= outputResult
 parseCommandOptions ("sizes":"list":_)                   = listSizes >>= outputResult
-parseCommandOptions e                                    = fail $ "I don't know how to interpret commands " ++ unwords e ++ "\n" ++ usage
+parseCommandOptions ("ips":"list":_)                     = listFloatingIPs >>= outputResult
+parseCommandOptions ("ips":"create":dropletOrRegion:[])  = do
+  regions <- listRegions
+  outputResult =<< if dropletOrRegion `elem` map regionSlug regions
+    then createFloatingIP (TargetRegion dropletOrRegion)
+    else createFloatingIP (TargetDroplet $ read dropletOrRegion)
+parseCommandOptions ("ips":"delete":ip:[])     = deleteFloatingIP (P.read ip) >>= outputResult
+parseCommandOptions ("ips":ip:"assign":did:[]) = assignFloatingIP (P.read ip) (P.read did) >>= outputResult
+parseCommandOptions ("ips":ip:"unassign": [])  = unassignFloatingIP (P.read ip) >>= outputResult
+parseCommandOptions ("dns":"list":_)             = listDomains >>= outputResult
+parseCommandOptions ("dns":"create":name:ip:[])  = createDomain (P.read name) (P.read ip) >>= outputResult
+parseCommandOptions ("dns":"delete":name:[])     = deleteDomain (P.read name) >>= outputResult
+parseCommandOptions ("dns":name:"list":_)        = listRecords (P.read name) >>= outputResult
+parseCommandOptions ("dns":name:"create":rest)   =
+  case (parseRecord $ unwords rest) of
+    Left (Error e) -> fail e
+    Right r        -> createRecord (P.read name) r >>= outputResult
+parseCommandOptions ("dns":name:"delete":rid:[]) = deleteRecord (P.read name) (P.read rid) >>= outputResult
+parseCommandOptions e                          = fail $ "I don't know how to interpret commands " ++ unwords e ++ "\n" ++ usage

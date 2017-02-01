@@ -2,14 +2,14 @@
 module Network.DO.Net.Common where
 
 import           Control.Comonad.Env.Class (ComonadEnv, ask)
-import           Data.Aeson                as A
+import           Data.Aeson                as A hiding (Result)
 import qualified Data.Aeson.Types          as A
 import qualified Data.HashMap.Strict       as H
 import           Data.Maybe
 import           Data.Proxy
 import           Data.Text                 (Text)
 import qualified Data.Vector               as V
-import           Network.DO.Types          as DO hiding (URI)
+import           Network.DO.Types          as DO hiding (URI, error)
 import           Network.REST
 import           Network.URI               (URI, parseURI)
 import           Prelude                   as P
@@ -25,7 +25,7 @@ s </> ('/': s') = s ++ s'
 s </> s'        = s ++ "/" ++ s'
 
 toURI :: String -> URI
-toURI = fromJust . parseURI
+toURI s = maybe (P.error $ "cannot parse URI from " ++ s) id $ parseURI s
 
 toList :: (FromJSON a) => Text -> Value -> [a]
 toList k (Object o) = let Array boxes = o  H.! k
@@ -42,3 +42,7 @@ queryList p w = maybe (return [], w)
                         in (droplets, w))
                 (authToken (ask w))
 
+-- |Extract a typed result from a JSON output
+fromResponse :: (FromJSON a) => Text -> Either String Value -> Result a
+fromResponse key (Right (Object b)) = either error (Right . id) $ A.parseEither parseJSON (b H.! key)
+fromResponse _   v                  = error $ "cannot decode JSON value to a FloatingIP " ++ show v

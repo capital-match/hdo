@@ -6,19 +6,30 @@
 {-# LANGUAGE TypeOperators          #-}
 module Network.DO.Pairing (Pairing(..)
                , PairingM(..)
+               , (:+:), (:*:)
                , pairEffect
                , pairEffectM
                , pairEffect'
                , injr, injl
+               , injrl, injrr
+               , injrrl, injrrr
                ) where
 
 import           Control.Comonad              (Comonad, extract)
 import           Control.Comonad.Trans.Cofree (CofreeT, unwrap)
 import           Control.Monad.Trans.Free     (FreeF (..), FreeT, liftF,
                                                runFreeT)
-import           Data.Functor.Sum
 import           Data.Functor.Identity        (Identity (..))
 import           Data.Functor.Product
+import           Data.Functor.Sum
+
+type a :+: b = Sum a b
+
+infixr 1 :+:
+
+type a :*: b = Product a b
+
+infixr 2 :*:
 
 class (Functor f, Functor g) => Pairing f g where
   pair :: (a -> b -> r) -> f a -> g b -> r
@@ -51,6 +62,18 @@ injl = liftF . InL
 
 injr :: (Monad m, Functor f, Functor g) => g a -> FreeT (Sum f g) m a
 injr = liftF . InR
+
+injrl :: (Monad m, Functor f, Functor g, Functor h) => g a -> FreeT (f :+: g :+: h) m a
+injrl = liftF . InR . InL
+
+injrr :: (Monad m, Functor f, Functor g, Functor h) => h a -> FreeT (f :+: g :+: h) m a
+injrr = liftF . InR . InR
+
+injrrl :: (Monad m, Functor f, Functor g, Functor h, Functor k) => h a -> FreeT (f :+: g :+: h :+: k) m a
+injrrl = liftF . InR . InR . InL
+
+injrrr :: (Monad m, Functor f, Functor g, Functor h, Functor k) => k a -> FreeT (f :+: g :+: h :+: k) m a
+injrrr = liftF . InR . InR . InR
 
 pairEffect :: (Pairing f g, Comonad w, Monad m)
            => (a -> b -> r) -> CofreeT f w a -> FreeT g m b -> m r

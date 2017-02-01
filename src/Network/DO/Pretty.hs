@@ -81,9 +81,35 @@ instance Pretty Size where
                     nest 5 (pretty szPrice_Hourly <> text "$/h, " <> pretty szPrice_Monthly <> text "$/mo" ) $$
                     nest 5 (hcat $ punctuate (char ',') $ map pretty szRegions)
 
-instance Pretty ActionResult where
+instance (Pretty r) => Pretty (ActionResult r) where
   pretty ActionResult{..} = brackets (integer actionId) <+> pretty actionStartedAt <+> text "->" <+> pretty actionCompletedAt $$
-                            (nest 5 $ integer actionResourceId <+> text (show actionType) <> char ':' <+> text (show actionStatus))
+                            (nest 5 $ integer actionResourceId <+> pretty actionType <> char ':' <+> text (show actionStatus))
+
+instance Pretty DropletActionType
+
+instance Pretty FloatingIP where
+  pretty FloatingIP{..} =
+    case floatingDroplet of
+      Nothing -> ipAndRegion <+> text "?"
+      Just d  -> ipAndRegion <+> integer (dropletId d) <> char '/' <> text (name d)
+    where
+      ipAndRegion = pretty floatingIp <> text "/" <>  text (regionSlug floatingRegion) <+> text "->"
+
+instance Pretty IPActionType
+
+instance Pretty Domain where
+  pretty Domain{..} = text (domain domainName) $$
+                      maybe mempty (nest 5 . vcat . map text .lines) zone_file
+
+instance Pretty DomainRecord where
+  pretty DomainRecord{..} = brackets (integer recordId) <+> pretty recordType <+> text recordName <+> text recordData
+                            <+> prettyInt recordPriority
+                            <+> prettyInt recordPort
+                            <+> prettyInt recordWeight
+    where
+      prettyInt = maybe (char '-') int
+
+instance Pretty DNSType
 
 outputResult :: (Pretty a, MonadIO m) => a -> m  ()
 outputResult = liftIO . putStrLn . render . pretty
