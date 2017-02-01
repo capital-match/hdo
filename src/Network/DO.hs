@@ -70,7 +70,7 @@ listDropletSnapshots = injr . C.listDropletSnapshots
 runDOEnv :: Command IO a -> IO a
 runDOEnv actions = do
   token <- getAuthFromEnv
-  runWreq $ pairEffectM (\ _ b -> return b) (mkDOClient $ Tool Nothing token False) actions
+  runConduit $ pairEffectM (\ _ b -> return b) (mkDOClient $ Tool Nothing token False) actions
 
 getAuthFromEnv :: IO (Maybe AuthToken)
 getAuthFromEnv = (Just `fmap` getEnv "AUTH_TOKEN") `catch` (\ (e :: IOError) -> if isDoesNotExistError e then return Nothing else throw e)

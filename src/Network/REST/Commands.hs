@@ -1,8 +1,7 @@
-{-# LANGUAGE DeriveFunctor       #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DeriveFunctor, OverloadedStrings, ScopedTypeVariables #-}
 -- | Functor and low-level mechanism to interact with a server using "REST" API.
 --
--- This module exposes @Net@ functor which can be implemented using various stack.
+-- This module exposes @REST@ functor which can be implemented using various stack.
 -- In particular, we provide @Network.REST.Wreq@ module as a wreq-based implementation
 -- and a test-only implementation which is used to check correctness of higher-level
 -- code, in particular in relation with JSON serialization.
@@ -10,8 +9,14 @@ module Network.REST.Commands where
 
 import           Control.Monad.Trans.Free (FreeT (..), liftF)
 import           Data.Aeson               (Value)
+import           Data.Monoid
+import           Data.Text                (Text, pack)
 import           Network.URI              (URI)
-import           Network.Wreq             (Options)
+
+data Options = Header Text [ Text ]
+
+authorisation :: String -> Options
+authorisation t = Header "Authorization" [ "Bearer " <> pack t]
 
 data REST a = Get URI (Value -> a)
            | Post URI Value (Maybe Value -> a)

@@ -1,19 +1,20 @@
 {-# LANGUAGE ScopedTypeVariables #-}
--- | Implementation of @Net@ interface based on <http://wreq.io wreq>
-module Network.REST.Wreq where
+-- | Implementation of @REST@ interface based on <https://haskell-lang.org/library/http-client http-conduit>
+-- standard library
+module Network.REST.Client where
 
 import           Control.Concurrent       (threadDelay)
 import           Control.Lens             ((^.))
 import           Control.Monad.Trans.Free
 import           Data.Aeson               (Value, decode, eitherDecode)
 import           Data.ByteString.Lazy     (ByteString)
+import           Network.HTTP.Simple
 import           Network.REST.Commands
 import           Network.URI
-import           Network.Wreq
 
--- | An implementation of @Net@ functor based on wreq and @IO@
-runWreq :: RESTT IO r -> IO r
-runWreq r = do
+-- | An implementation of @REST@ functor based on http-client and @IO@
+runClient :: RESTT IO r -> IO r
+runClient r = do
   mr <- runFreeT r
   step mr
     where

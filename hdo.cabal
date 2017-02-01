@@ -1,5 +1,5 @@
 Name: hdo
-Version: 0.2
+Version: 0.3
 Cabal-Version: >= 1.18
 Maintainer: Arnaud Bailly <arnaud.oqube@gmail.com>
 Author: Arnaud Bailly
@@ -20,7 +20,7 @@ Library
   Default-Language:   Haskell2010
   GHC-Options:  -Wall -fno-warn-orphans
   Hs-Source-Dirs:  src
-  Other-Modules:   Network.REST.Commands, Network.REST.Wreq, Network.SSH, Network.DO.Types
+  Other-Modules:   Network.REST.Commands, Network.REST.Conduit, Network.SSH, Network.DO.Types
                  , Network.DO.Net, Network.DO.Net.Common
                  , Network.DO.Commands
                  , Network.DO.Droplets.Commands, Network.DO.Droplets.Net, Network.DO.Droplets.Utils
@@ -31,9 +31,11 @@ Library
   Build-Depends: aeson
                , base >= 4 && < 5
                , bytestring
+               , case-insensitive
                , comonad
                , data-default
                , free
+               , http-conduit
                , iproute
                , lens
                , pretty
@@ -47,7 +49,6 @@ Library
                , unix, process
                , unordered-containers
                , vector
-               , wreq
 
 Executable docean
   Default-Language:   Haskell2010

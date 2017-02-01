@@ -1,9 +1,4 @@
-{-# LANGUAGE DoAndIfThenElse       #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE DoAndIfThenElse, FlexibleContexts, MultiParamTypeClasses, OverloadedStrings, RecordWildCards, ScopedTypeVariables #-}
 
 -- | Network interpreter for Droplets specific API
 module Network.DO.Droplets.Net(dropletCommandsInterpreter) where
@@ -23,7 +18,6 @@ import           Network.DO.Droplets.Utils
 import           Network.DO.Net.Common
 import           Network.DO.Types             as DO hiding (URI)
 import           Network.REST
-import           Network.Wreq                 hiding (Proxy)
 import           Prelude                      as P hiding (error)
 
 dropletsURI :: String
@@ -96,8 +90,8 @@ doSshInDroplet w droplet =   let r = maybe (return $ error ("droplet " <> show d
                                      (\ip -> do
                                          s <- ssh ["root@" <> show ip ]
                                          case s of
-                                          Left (e :: IOException)  -> return $ error (show e)
-                                          Right () -> return $ Right ()
+                                          Left (e :: IOException) -> return $ error (show e)
+                                          Right ()                -> return $ Right ()
                                      )
                                      (publicIP droplet)
                              in (r, w)
