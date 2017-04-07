@@ -1,9 +1,15 @@
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE KindSignatures         #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE RankNTypes             #-}
-{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE DataKinds                 #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE FunctionalDependencies    #-}
+{-# LANGUAGE InstanceSigs              #-}
+{-# LANGUAGE KindSignatures            #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE PolyKinds                 #-}
+{-# LANGUAGE RankNTypes                #-}
+{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE TypeOperators             #-}
+{-# LANGUAGE UndecidableInstances      #-}
 module Network.DO.Pairing (Pairing(..)
                , PairingM(..)
                , (:+:), (:*:)
@@ -49,18 +55,18 @@ class (Functor f, Functor g, Monad m) => PairingM f g m where
 instance (Monad m) => PairingM ((,) (m a)) ((->) a) m where
   pairM p (ma, b) g = ma >>= \ a -> p b (g a)
 
-instance (Monad m, PairingM f h m, PairingM g k m) => PairingM (Sum f g) (Product h k) m where
+instance (Monad m, PairingM f h m, PairingM g k m) => PairingM (f :+: g) (h :*: k) m where
   pairM p (InL f) (Pair h _)  = pairM p f h
   pairM p (InR g) (Pair _ k) = pairM p g k
 
-instance (Monad m, PairingM h f m, PairingM k g m) => PairingM (Product h k) (Sum f g) m where
+instance (Monad m, PairingM h f m, PairingM k g m) => PairingM (h :*: k) (f :+: g) m where
   pairM p (Pair h _) (InL f)  = pairM p h f
   pairM p (Pair _ k) (InR g) = pairM p k g
 
-injl :: (Monad m, Functor f, Functor g) => f a -> FreeT (Sum f g) m a
+injl :: (Monad m, Functor f, Functor g) => f a -> FreeT (f :+: g) m a
 injl = liftF . InL
 
-injr :: (Monad m, Functor f, Functor g) => g a -> FreeT (Sum f g) m a
+injr :: (Monad m, Functor f, Functor g) => g a -> FreeT (f :+: g) m a
 injr = liftF . InR
 
 injrl :: (Monad m, Functor f, Functor g, Functor h) => g a -> FreeT (f :+: g :+: h) m a
