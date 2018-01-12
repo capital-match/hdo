@@ -86,7 +86,7 @@ doSshInDroplet w droplet =   let r = maybe (return $ error ("droplet " <> show d
                                      (publicIP droplet)
                              in (r, w)
 
-waitForBoxToBeUp :: (Monad m) => Options -> Int -> Droplet -> RESTT m (Result Droplet)
+waitForBoxToBeUp :: (Monad m) => Network.REST.Options -> Int -> Droplet -> RESTT m (Result Droplet)
 waitForBoxToBeUp _    0 box  = return (Right box)
 waitForBoxToBeUp opts n box  = do
   waitFor 1000000 ("waiting for droplet " ++ name box ++ " to become Active: " ++ show (n) ++ "s")
